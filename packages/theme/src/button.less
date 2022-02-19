@@ -1,0 +1,43 @@
+@import './mixins/var.less';
+
+.wxp-btn {
+  // reset
+  outline: none;
+  border: none;
+  padding: 0;
+  background: none;
+
+  // layout
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+
+  box-sizing: border-box;
+  border-radius: 6px;
+  cursor: pointer;
+
+  &.wxp-btn-primary {
+    padding: 11px 12px;
+
+    &:hover {
+    }
+
+    &:active {
+    }
+
+    &:disabled {
+      cursor: not-allowed;
+    }
+
+    &.wxp-btn-large {
+      height: 44px;
+    }
+    &.wxp-btn-normal {
+      height: 32px;
+    }
+    &.wxp-btn-small {
+      height: 28px;
+    }
+  }
+}

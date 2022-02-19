@@ -1,0 +1,36 @@
+{
+  "ts-node": {
+    "compilerOptions": {
+      "module": "commonjs"
+    }
+  },
+  "compilerOptions": {
+    "module": "esnext",
+    "declaration": false,
+    "noImplicitAny": false,
+    "removeComments": true,
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "jsx": "preserve",
+    "noLib": false, // 不处理类库
+    "target": "ESNext",
+    "sourceMap": true,
+    "lib": [
+      "esnext",
+      "DOM"
+    ],
+    "allowSyntheticDefaultImports": true, // 允许没有导出的模块中导入
+    "experimentalDecorators": true,
+    "forceConsistentCasingInFileNames": true, // 强制区分大小写
+    "resolveJsonModule": true,
+    "strict": true,
+    "skipLibCheck": true
+  },
+  "include": ["packages"],
+  "exclude": [
+    "node_modules",
+    "**/__tests__",
+    "**/__docs__",
+    "**/dist"
+  ]
+}

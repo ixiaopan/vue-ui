@@ -1,0 +1,14 @@
+# Editor directories and files
+.idea
+.DS_Store
+
+# Package Manager
+node_modules
+.pnpm-debug.log*
+
+# Bundle
+dist
+coverage
+
+# local env files
+*.local

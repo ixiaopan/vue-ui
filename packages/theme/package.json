@@ -1,0 +1,11 @@
+{
+  "name": "@wxp-ui/theme",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "scripts": {
+    "clean": "rimraf dist",
+    "build": "gulp"
+  },
+  "author": "",
+  "license": "ISC"
+}

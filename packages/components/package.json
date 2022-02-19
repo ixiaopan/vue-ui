@@ -1,0 +1,11 @@
+{
+  "name": "@wxp-ui/components",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "peerDependencies": {
+    "vue": "^3.2.20",
+    "ant-design-vue": "^2.2.8"
+  },
+  "author": "",
+  "license": "ISC"
+}
