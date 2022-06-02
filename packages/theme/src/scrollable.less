@@ -1,0 +1,44 @@
+@import './mixins/var.less';
+
+.wxp-scrollable {
+  position: relative;
+  height: 100%; // 继承业务外层容器的高度
+  overflow-y: auto;
+
+  &.wxp-scrollable-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  // 加载第一页，loading 铺满整个区域
+  .wxp-scrollable-loading-init {
+    position: absolute;
+    left: 0;
+    top: 0;
+    
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.75);
+    
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    will-change: opacity;
+  }
+
+  .wxp-scrollable-loading-init-fade-enter-from {
+    opacity: 1;
+  }
+  .wxp-scrollable-loading-init-fade-enter-to {
+    opacity: 0;
+  }
+
+  // 翻页的时候，显示小 loading
+  .wxp-scrollable-loading-footer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}

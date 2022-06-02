@@ -1,0 +1,27 @@
+@import './mixins/var.less';
+
+.wxp-message {
+  position: fixed;
+  left: 50%;
+  top: 20px;
+  z-index: 2000;
+
+  display: flex;
+  align-items: center;
+
+  padding: 8px 12px;
+  border-radius: 6px;
+
+  transform: translateX(-50%);
+  transition: opacity 0.3s, transform 0.4s, top 0.4s;
+
+  &.wxp-message-success {
+    background: @m-primary-color;
+  }
+}
+
+.wxp-message-fade-enter-from,
+.wxp-message-fade-leave-to {
+  opacity: 0;
+  transform: translate(-50%, -100%);
+}

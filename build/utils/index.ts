@@ -7,7 +7,6 @@ import { WXP_PREFIX, WXP_PKG } from './constants'
 export const run = async (command: string, cwd: string = projectRoot) =>
   new Promise<void>((resolve, reject) => {
     const [cmd, ...args] = command.split(' ')
-    console.log('Hello world!')
 
     const app = spawn(cmd, args, {
       cwd,
@@ -54,8 +53,6 @@ export const getDistPackages = async () =>
 
 
 export async function wxpPathAlias() {
-  const pkgs = await getDistPackages()
-
   return {
     name: 'wxp-path-alias-plugin',
 
@@ -70,11 +67,6 @@ export async function wxpPathAlias() {
         }
       }
 
-      let updatedId = id
-      for (const pkg of pkgs) {
-        if (id.startsWith(pkg.name))
-          updatedId = updatedId.replace(pkg.name, pkg.dir)
-      }
       return this.resolve(id, importer, { skipSelf: true, ...options })
     },
   }

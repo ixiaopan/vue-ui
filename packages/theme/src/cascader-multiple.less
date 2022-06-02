@@ -1,0 +1,322 @@
+@import './mixins/var.less';
+
+.wxp-cascader-multiple {
+  .ant-input {
+    border: none !important;
+    width: auto !important;
+    padding: 0 !important;
+    outline: none !important;
+    min-width: 20px;
+
+    &:focus {
+      box-shadow: none !important;
+    }
+
+    flex: 1 !important;
+    height: 24px !important;
+  }
+
+  position: relative;
+  z-index: 10;
+
+  // 包含 reason 的大容器
+  .wxp-cascader-multiple-form {
+
+  }
+
+  // 即模拟的输入框
+  .wxp-cascader-multiple-inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    align-items: flex-start;
+    
+    padding: 4px 12px;
+    height: 100%;
+
+    border: 1px solid  #E1E4EA;
+    box-sizing: border-box;
+    border-radius: 6px;
+    overflow-y: auto;
+
+    transition: all 0.25s;
+
+    &.wxp-cascader-multiple-inner-disabled {
+      background: #F2F4F8;
+      cursor: not-allowed;
+
+      &:hover {
+        border-color: #E1E4EA;
+      }
+    }
+
+    &:hover {
+      border-color: @m-grey-8;
+    }
+    &:focus,
+    &-focused,
+    &-focused:hover {
+      border-color: @m-primary-color;
+      box-shadow: 0 0 0 1px @m-primary-color;
+    }
+
+    &-error,
+    &-error:hover {
+      border-color: @m-error-color-6;
+      box-shadow: none;
+
+      // &.wxp-cascader-multiple-inner-focused {
+      //   border-color: @m-primary-color;
+      //   box-shadow: 0 0 0 2px rgb(87 82 255 / 20%);
+      // }
+    }
+  }
+
+  // 原因
+  .wxp-cascader-multiple-explain {
+    margin: 0;
+    font: @m-font-s;
+    color: @m-error-color-6;
+  }
+
+  // 标签
+  .wxp-cascader-multiple-tag {
+    margin-right: 8px;
+    margin-bottom: 8px;
+  }
+
+  // 下拉列表的 最外层容器
+  .wxp-cascader-multiple-list {
+    position: absolute;
+    transform: translateY(8px);
+    background: #FFFFFF;
+    box-shadow: 0px 11px 20px rgba(0, 0, 0, 0.06), 0px 3px 6px rgba(0, 0, 0, 0.05), 0px 0px 2px rgba(0, 0, 0, 0.05);
+    border-radius: 6px;
+
+    &.wxp-cascader-multiple-list-sole {
+      .wxp-cascader-multiple-list-wrap {
+        flex: 1;
+      }
+    }
+  }
+
+  .wxp-spin {
+    display: flex;
+    white-space: nowrap;
+  }
+
+  // wrapper of each level
+  .wxp-cascader-multiple-list-wrap {
+    flex: 0 0 auto;
+    box-sizing: border-box;
+    padding: 8px 3px 8px 8px;
+
+    & + .wxp-cascader-multiple-list-wrap {
+      box-shadow: inset 1px 0px 0px #E7EBF3;
+    }
+  }
+
+  // 每一级真正的容器
+  .wxp-cascader-multiple-level {
+    // reset
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    user-select: none;
+    
+    max-height: 212px;
+    box-sizing: border-box;
+    overflow-y: auto;
+
+    &::-webkit-scrollbar {
+      width: 5px;
+      display: block !important;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: rgba(30, 29, 53, 0.11);
+      border-radius: 60px;
+    }
+  }
+
+  // 每个子项
+  .wxp-cascader-multiple-level-item {
+    display: flex;
+    align-items: center;
+    padding: 5px 8px;
+    margin-right: 8px;
+
+    font: @m-font-base;
+    color: @m-text-color-95;
+    cursor: pointer;
+
+    & + .wxp-cascader-multiple-level-item {
+      margin-top: 4px;
+    }
+    .wxp-cascader-multiple-level-text {
+      margin-right: 32px;
+    }
+    .wxp-cascader-multiple-level-arrow {
+      margin-left: auto;
+      font-size: 16px;
+      color: @m-text-color-25;
+    }
+   
+    &:hover {
+      background: rgba(30, 29, 53, 0.05);
+      border-radius: 6px;
+    }
+
+    &.wxp-cascader-multiple-level-item-selecting {
+      background: rgba(30, 29, 53, 0.05);
+      border-radius: 6px;
+      .wxp-icon {
+        color: @m-primary-color;
+      }
+    }
+    
+    // 结束
+    &.wxp-cascader-multiple-level-item-selected {
+      font-weight: 600;
+      color: #18AFA8;
+      background-color: transparent;
+      &:hover {
+        background: rgba(30, 29, 53, 0.05);
+        border-radius: 6px;
+      }
+      .wxp-icon {
+        color: rgba(0, 0, 0, 0.25);
+      }
+    }
+    &.wxp-cascader-multiple-level-item-selecting-ended {
+      background: rgba(30, 29, 53, 0.05);
+      border-radius: 6px;
+      color: @m-primary-color;
+    }
+    &.wxp-cascader-multiple-level-item-selecting-ended-collapsed {
+      background: transparent;
+      .wxp-icon {
+        color: rgba(0, 0, 0, 0.25);
+      }
+    }
+
+    &.wxp-cascader-multiple-level-item-disabled {
+      color: rgba(0, 0, 0, 0.4);
+
+      .wxp-cascader-multiple-level-checkbox {
+        border-color: #D7D8DB;
+        background: #EFF1F5;
+        &:hover {
+          border-color: #D7D8DB;
+        }
+      }
+    }
+
+    .wxp-cascader-multiple-level-checkbox {
+      position: relative;
+      margin-right: 6px;
+      width: 14px;
+      height: 14px;
+      border-radius: 2px;
+      border: 1px solid rgba(0, 0, 0, 0.4);
+
+      &:hover {
+        border-color: @m-primary-color;
+      }
+    }
+    .wxp-cascader-multiple-level-checkbox-selected {
+      background-color: @m-primary-color;
+      border-color: @m-primary-color;
+      position: relative;
+      &::before {
+        content: '';
+          width: 8px;
+          height: 5px;
+          border: 1px solid #fff;
+          transform: rotate(-45deg);
+          position: absolute;
+          top: 2px;
+          left: 2px;
+          border-top-color: transparent;
+          border-right-color: transparent;
+          border-top-left-radius: 2px;
+          border-bottom-right-radius: 2px;
+      }
+    }
+  }
+  
+  // TODO
+  // 模糊搜索
+  .wxp-cascader-multiple-search-option {
+    margin: 0;
+    padding: 8px;
+    list-style: none;
+
+    max-height: 228px;
+    box-sizing: border-box;
+    overflow-y: auto;
+    white-space: normal;
+
+    em {
+      font-style: normal;
+      color: @m-primary-color;
+    }
+
+    &::-webkit-scrollbar {
+      width: 5px;
+      display: block !important;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: rgba(30, 29, 53, 0.11);
+      border-radius: 60px;
+    }
+    .wxp-cascader-multiple-search-option-item {
+      padding: 5px 8px;    
+      font: @m-font-base;
+      color: @m-text-color-95;
+      cursor: pointer;
+
+      & + .wxp-cascader-multiple-search-option-item {
+        margin-top: 4px;
+      }
+
+      &:hover {
+        background: rgba(30, 29, 53, 0.05);
+        border-radius: 6px;
+      }
+
+      .wxp-cascader-multiple-search-option-item-node {
+        color: @m-text-color-40;
+        .wxp-cascader-multiple-search-option-item-node-arrow {
+          font-size: 12px;
+          margin: 0 2px;
+        }
+        &:last-child {
+          color: @m-text-color-95;
+          .wxp-cascader-multiple-search-option-item-node-arrow {
+            display: none;
+          }
+        }
+      }
+    }
+  }
+
+  .wxp-cascader-multiple-empty {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 3;    
+    background: #FFFFFF;
+    box-shadow: 0px 11px 20px rgba(0, 0, 0, 0.06), 0px 3px 6px rgba(0, 0, 0, 0.05), 0px 0px 2px rgba(0, 0, 0, 0.05);
+    border-radius: 6px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font: @m-font-s;
+    text-align: center;
+    color: rgba(0, 0, 0, 0.4);
+  }
+}

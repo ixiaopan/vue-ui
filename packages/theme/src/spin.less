@@ -1,0 +1,45 @@
+@import './mixins/var.less';
+
+.wxp-spin {
+  position: relative;
+  
+
+  // case 1
+  &.wxp-spin-inline {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .wxp-spin-icon {
+    .wxp-spinning()
+  }
+  
+  .wxp-spin-text {
+    margin-left: 4px;
+    color: rgba(0, 0, 0, 0.4);
+    font: normal normal 14px/22px "PingFang SC";
+  }
+  
+  // case 2 放在最上的，全屏loading
+  .wxp-spin-inner {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 100%;
+    z-index: 1;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(255,255,255,0.75);
+  }
+
+  // 执行动画
+  &.wxp-spin-ing {
+    .wxp-spin-icon {
+      animation: spinRotate 1.2s infinite linear;
+    }
+  }
+}

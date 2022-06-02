@@ -52,6 +52,7 @@
     "rollup": "^2.63.0",
     "rollup-plugin-css-only": "^3.1.0",
     "rollup-plugin-esbuild": "^4.8.2",
+    "rollup-plugin-jscc": "^2.0.0",
     "rollup-plugin-filesize": "^9.1.1",
     "rollup-plugin-vue": "^6.0.0",
     "sucrase": "^3.20.3",
@@ -67,9 +68,11 @@
     "@wxp-ui/components": "workspace:^1.0.0",
     "@wxp-ui/theme": "workspace:^1.0.0",
     "@wxp-ui/utils": "workspace:^1.0.0",
+    "@wxp/wxp-ui": "workspace:^0.0.1-alpha.1",
     "@vue/compiler-sfc": "^3.2.26",
     "ant-design-vue": "^2.2.8",
     "lodash.debounce": "^4.0.8",
+    "dayjs": "^1.11.0",
     "vue": "^3.2.26",
     "vue-types": "^4.1.1"
   }

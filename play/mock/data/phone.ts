@@ -19,6 +19,8 @@ const memberInfo = [
   },
 ]
 
+const memberInfoEmpty = []
+
 export default [
   {
     url: '/getMemberInfo',
@@ -26,6 +28,15 @@ export default [
     method: 'get',
     response: () => {
       return resultSuccess(memberInfo);
+    },
+  },
+
+  {
+    url: '/getMemberNotFound',
+    timeout: 1000,
+    method: 'get',
+    response: () => {
+      return resultSuccess(memberInfoEmpty);
     },
   },
 

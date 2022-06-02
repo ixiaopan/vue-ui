@@ -59,14 +59,14 @@ export default defineConfig({
       ],
     }),
 
-    // viteMockServe({
-    //   ignore: /^\_/,
-    //   mockPath: 'mock',
-    //   injectCode: `
-    //     import { setupProdMockServer } from '../mock/_createServer';
+    viteMockServe({
+      ignore: /^\_/,
+      mockPath: 'mock',
+      injectCode: `
+        import { setupProdMockServer } from '../mock/_createServer';
 
-    //     setupProdMockServer();
-    //     `,
-    // })
+        setupProdMockServer();
+        `,
+    })
   ],
 })

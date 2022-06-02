@@ -5,12 +5,24 @@ import commonjs from '@rollup/plugin-commonjs'
 import esbuild from 'rollup-plugin-esbuild'
 import css from 'rollup-plugin-css-only'
 import glob from 'fast-glob'
+import jscc from 'rollup-plugin-jscc'
 
 import { uiRoot, pkgRoot } from './utils/paths'
 import { buildConfig } from './utils/build-config'
 import { generateExternal, wxpPathAlias, excludeFiles } from './utils'
 import type { OutputOptions } from 'rollup'
 
+import repo from '@wxp/wxp-ui/package.json'
+
+console.log('build version: ', repo.version)
+
+function preprocessPlugin() {
+  return jscc({
+    values: {
+      _VERSION: repo.version,
+    },
+  })
+}
 
 export const buildModules = async () => {
   const input = excludeFiles(
@@ -30,6 +42,7 @@ export const buildModules = async () => {
       nodeResolve({
         extensions: ['.mjs', '.js', '.json', '.ts'],
       }),
+      preprocessPlugin(),
       commonjs(),
       esbuild({
         sourceMap: true,
@@ -47,7 +60,6 @@ export const buildModules = async () => {
     preserveModules: true,
     preserveModulesRoot: uiRoot,
     entryFileNames: `[name].${config.ext}`,
-    // paths: pathRewriter(config.output.name)
   }));
 
   await Promise.all(

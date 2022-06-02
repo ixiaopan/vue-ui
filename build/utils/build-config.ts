@@ -1,6 +1,5 @@
 import path from 'path'
 import { uiDir } from './paths'
-import { WXP_PKG } from './constants'
 
 export const buildConfig = {
   esm: {
@@ -11,9 +10,6 @@ export const buildConfig = {
       name: 'es',
       path: path.resolve(uiDir, 'es'),
     },
-    bundle: {
-      path: `${WXP_PKG}/es`,
-    },
   },
   cjs: {
     module: 'CommonJS',
@@ -22,9 +18,6 @@ export const buildConfig = {
     output: {
       name: 'lib',
       path: path.resolve(uiDir, 'lib'),
-    },
-    bundle: {
-      path: `${WXP_PKG}/lib`,
     },
   },
 }

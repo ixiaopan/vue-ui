@@ -1,0 +1,121 @@
+@import './mixins/var.less';
+
+.wxp-tab {
+  .wxp-tab-nav {
+    margin: 0;
+    padding: 0;
+    position: relative;
+    background: #F5F7F9;
+    border-radius: 6px;
+    color: @m-text-color-70;
+  }
+  
+  .wxp-tab-nav-normal {
+    height: 40px;
+    font: @m-font-base;
+  }
+  
+  .wxp-tab-nav-small {
+    height: 36px;
+    font: @m-font-s;
+  }
+
+  .wxp-tab-nav-inner {
+    height: 100%;
+    display: flex;
+    align-items: stretch;
+  }
+  .wxp-tab-nav-item {
+    position: relative;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    cursor: pointer;
+    user-select: none;
+    transition: all .3s;
+
+    &:hover {
+      color: rgba(0, 0, 0, 0.95);
+    }
+
+    &.wxp-tab-nav-item-active {
+      color: rgba(0, 0, 0, 0.95);
+      cursor: default;
+      user-select: none;
+    }
+
+    &.wxp-tab-nav-item-disabled {
+      cursor: not-allowed;
+      &:hover {
+        color: @m-text-color-70;
+      }
+    }
+  }
+  
+  // 高亮的滑块
+  .wxp-tab-nav-active {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+    height: 100%;
+    padding: 4px;
+    box-sizing: border-box;
+    transition: all .3s;
+    .wxp-tab-nav-active-inner {
+      height: 100%;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      
+      color: rgba(0, 0, 0, 0.95);
+      font-weight: 600;
+      cursor: default;
+      
+      background: #fff;
+      box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.08), 0px 1px 1px rgba(0, 0, 0, 0.05);
+      border-radius: 5px;
+      
+      user-select: none;
+    }
+  }
+}
+
+// 自适应模式
+.wxp-tab-auto {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  
+  .wxp-tab-nav {
+    padding: 4px;
+  }
+
+  .wxp-tab-nav-item {
+    white-space: nowrap;
+  }
+
+  .wxp-tab-nav-normal {
+    .wxp-tab-nav-active-inner,
+    .wxp-tab-nav-item {
+      padding: 5px 12px;
+    }
+  }
+  
+  .wxp-tab-nav-small { 
+    .wxp-tab-nav-active-inner,
+    .wxp-tab-nav-item {
+      padding: 4px 8px;
+    }
+  }
+
+  .wxp-tab-nav-item-hint {
+    position: absolute;
+    right: 4px;
+    top: 4px;
+    margin: 0;
+  }
+}

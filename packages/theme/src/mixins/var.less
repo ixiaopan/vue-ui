@@ -1,0 +1,39 @@
+// -- 颜色 --
+@m-white: #fff; // 白色
+@m-grey-8: #B9BABD; // 中性色/灰8
+
+@m-text-color: #000; // 黑色
+@m-text-color-95: fade(@m-text-color, 95%); // 文字主色
+@m-text-color-70: fade(@m-text-color, 70%);
+@m-text-color-40: fade(@m-text-color, 40%);
+@m-text-color-25: fade(@m-text-color, 25%);
+
+@m-primary-color: #18AFA8;
+@m-error-color-6: #E74B58;
+
+// -- 字体 --
+@m-font-s: normal normal 12px/20px "PingFang SC";
+@m-font-base: normal normal 14px/22px "PingFang SC";
+
+
+// 自定义的less函数
+.wxp-spinning() {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1.5px solid #029C94;
+  border-left-color: transparent;
+  border-bottom-color: transparent;
+  border-right-color: transparent;
+  transform: rotate(45deg);
+}
+
+@keyframes spinRotate {
+  from {
+    transform: rotate(45deg);
+  }
+  to {
+    transform: rotate(405deg)
+  }
+}

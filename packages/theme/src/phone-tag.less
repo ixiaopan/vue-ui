@@ -1,0 +1,161 @@
+@import "./mixins/var.less";
+
+
+.wxp-phone-tag {
+  // reset
+  .ant-input {
+    border: none !important;
+    width: auto !important;
+    padding: 0 !important;
+    outline: none !important;
+    min-width: 20px;
+
+    &:focus {
+      box-shadow: none !important;
+    }
+
+    flex: 1 !important;
+    height: 24px !important;
+  }
+
+  position: relative;
+  z-index: 10;
+
+  &.wxp-phone-tag-sole {
+    .wxp-phone-tag-inner {
+      height: 32px;
+    }
+
+    .wxp-phone-tag-item {
+      background-color: transparent;
+      padding-left: 0;
+      font: @m-font-base;
+    }
+  }
+
+  &.wxp-phone-tag-multiple {
+    .wxp-phone-tag-inner {
+      height: 100px;
+      overflow-y: scroll;
+    }
+
+    .wxp-phone-tag-item {
+      margin-right: 8px;
+      margin-bottom: 8px;
+    }
+  }
+
+  &.wxp-phone-tag-error {
+    .wxp-phone-tag-input-form {
+      margin-bottom: 0;
+    }
+    .wxp-phone-tag-options {
+      margin-top: -18px;
+    }
+    .wxp-phone-tag-error-explain {
+      margin: 0;
+      font: @m-font-s;
+      color: @m-error-color-6;
+    }
+  }
+
+  .wxp-phone-tag-input-form {
+    margin: 0 0 26px;
+  }
+
+  .wxp-phone-tag-inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    align-items: flex-start;
+    padding: 4px 12px;
+
+    border: 1px solid #e8ebf3;
+    box-sizing: border-box;
+    border-radius: 6px;
+
+    transition: all 0.25s;
+
+    &:hover {
+      border-color: @m-grey-8;
+    }
+    &:focus,
+    &-focused,
+    &-focused:hover {
+      border-color: @m-primary-color;
+      box-shadow: 0 0 0 1px @m-primary-color;
+    }
+
+    &-error,
+    &-error:hover {
+      border-color: @m-error-color-6;
+      box-shadow: none;
+
+      // &.wxp-phone-tag-inner-focused {
+      //   border-color: @m-primary-color;
+      //   box-shadow: 0 0 0 2px rgb(87 82 255 / 20%);
+      // }
+    }
+  }
+
+  // option list
+  .wxp-phone-tag-options {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    top: 100%;
+    margin-top: 9px;
+    
+    padding: 8px;
+    background: #FFFFFF;
+    box-shadow: 0px 5px 9px rgba(0, 0, 0, 0.06), 0px 0px 2px rgba(0, 0, 0, 0.06), 0px 0px 2px rgba(0, 0, 0, 0.05);
+    border-radius: 6px;
+  }
+  .wxp-phone-tag-loading {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255,255,255,0.75);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .wxp-phone-tag-option-list {
+    overflow-x: hidden;
+    overflow-y: scroll;
+  }
+  // 查询不到
+  .wxp-phone-tag-option-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font: @m-font-s;
+    color: @m-text-color-40;
+  }
+
+  .wxp-phone-tag-option-item {
+    padding: 8px;
+    border-radius: 6px;
+    background-color: transparent;
+    transition: all .2s;
+    margin: 4px 0;
+
+    &:hover {
+      background-color: rgba(30, 29, 53, 0.05);
+    }
+  }
+
+  .wxp-phone-tag-option-item-active {
+    background: rgba(30, 29, 53, 0.05);
+  }
+  .wxp-phone-tag-option-item-disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    &:hover {
+      background-color: transparent;
+    }
+  }
+}

@@ -1,2 +1,11 @@
 export * from './button'
+export * from './cascader'
+export * from './tag'
+export * from './spin'
+export * from './icon'
+export * from './scrollable'
+export * from './message'
+export * from './cascader-multiple'
+export * from './phone-tag'
+export * from './tab'
 // <SLOT>, do not remove this comment!

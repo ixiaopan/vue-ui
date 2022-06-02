@@ -1,0 +1,29 @@
+@import './mixins/var.less';
+
+.wxp-tag {
+  transition: all 0.15s;
+  user-select: none;
+  
+  &.wxp-tag-predefined-red {
+    background-color: #FEF0F2;
+    color: #E74B58,
+  }
+  &.wxp-tag-predefined-green {
+    background-color: #EBFAF8;
+    color: #029C94;
+  }
+
+  // 方角标签
+  &-square {
+    display: inline-block;
+    padding: 1px 7px;
+    border-radius: 5px;
+  }
+
+  // 圆角标签
+  &-rounded {
+    border-radius: 20px;
+    padding: 3px 12px;
+  }
+
+}
