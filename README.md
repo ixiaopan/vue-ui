@@ -7,6 +7,11 @@ npm install pnpm -g
 pnpm i
 ```
 
+## Playground
+```
+npm run dev
+```
+
 ## Develop a new comp
 
 We follow kebab-case naming style, so a valid name includes
@@ -35,11 +40,14 @@ pnpm run build
 pnpm run pub
 ```
 
+
+
+
+
 ## Debug
 ```
 pnpm run debug
 ```
-
 
 ## Doc
 
@@ -56,11 +64,7 @@ npm link @wxp/wxp-ui
 # preview
 pnpm run docs
 
+
 # build
 pnpm run docs:build
-```
-
-## Playground
-```
-npm run dev
 ```

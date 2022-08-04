@@ -64,7 +64,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@ant-design/icons-vue": "^6.0.1",
+    "@wxp-ui/directives": "workspace:^1.0.0",
+    "@wxp-ui/plugins": "workspace:^1.0.0",
     "@wxp-ui/components": "workspace:^1.0.0",
     "@wxp-ui/theme": "workspace:^1.0.0",
     "@wxp-ui/utils": "workspace:^1.0.0",
