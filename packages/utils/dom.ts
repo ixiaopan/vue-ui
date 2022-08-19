@@ -13,26 +13,16 @@ export function getLineHeight(element: HTMLElement): number | void {
   return parseInt(lineHeight, 10);
 }
 
+
 export function getElementHeight(element: HTMLElement): number {
   return element.getBoundingClientRect().height;
 }
 export function getElementWidth(element: HTMLElement): number {
   return element.getBoundingClientRect().width;
 }
-
-
-// export function setWordBreak(element: HTMLElement, value: string): void {
-//   element.style.wordBreak = value;
-// }
-// // 让文字折行显示，这样就可以通过高度计算是否超出容器高度，进而截断
-// export function registerWordBreak(element: HTMLElement): string | void {
-//   const wordBreak = getComputedStyle(element, 'word-break')
-//   // eg: normal
-//   if (wordBreak !== 'word-break' && wordBreak !== 'break-all') {
-//     element.style.wordBreak = 'break-word'
-//   }
-// }
-
+export function getElementViewOffset(element: HTMLElement) {
+  return element.getBoundingClientRect()
+}
 
 export function on(
   element: Element | HTMLElement | Document | Window,
@@ -98,5 +88,24 @@ export function loadScriptFromRemote(scriptUrl: string) {
     typeof document.createElement === 'function'
   ) {
     return createScriptUrlElements(scriptUrl)
+  }
+}
+
+
+export function webpSupported() {
+  try {
+    const webpCache = localStorage.getItem('WXP_WEBP')
+    
+    if (webpCache) {
+      return parseInt(webpCache) === 1
+    }
+
+    const yes = document.createElement('canvas').toDataURL('image/webp', 0.5).indexOf('data:image/webp') == 0
+    
+    localStorage.setItem('WXP_WEBP', yes ? '1' : '0')
+    
+    return yes
+  } catch(err) {
+    return false
   }
 }

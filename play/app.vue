@@ -7,6 +7,8 @@
     <TabDemo />
     <MessageDemo />
     <ScrollableDemo />
+<VideoFrameDemo />
+<TextDemo />
 <!-- <SLOT>, do not remove this comment! -->
     
     <!-- <TagDemo />
@@ -28,6 +30,8 @@ import CascaderMultipleDemo from './components/CascaderMultipleDemo.vue'
 import PhoneTagDemo from './components/PhoneTagDemo.vue'
 import PhoneTagDemo1 from './components/PhoneTagDemo1.vue'
 import TabDemo from './components/TabDemo.vue'
+import VideoFrameDemo from './components/VideoFrameDemo.vue'
+import TextDemo from './components/TextDemo.vue'
 // <SLOT>, do not remove this comment!
 </script>
 

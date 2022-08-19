@@ -9,6 +9,8 @@ import Message from './__docs__/message.md'
 import CascaderMultiple from './__docs__/cascader-multiple.md'
 import PhoneTag from './__docs__/phone-tag.md'
 import Tab from './__docs__/tab.md'
+import VideoFrame from './__docs__/video-frame.md'
+import Text from './__docs__/text.md'
 // <SLOT>, do not remove this comment!
 
 type MenuItem = {
@@ -40,6 +42,8 @@ export default [
 { name: 'CascaderMultiple', component: CascaderMultiple },
 { name: 'PhoneTag', component: PhoneTag },
 { name: 'Tab', component: Tab },
+{ name: 'VideoFrame', component: VideoFrame },
+{ name: 'Text', component: Text },
 // <SLOT>, do not remove this comment!
     ],
   },

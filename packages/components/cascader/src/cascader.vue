@@ -16,7 +16,7 @@
       @click="mockFocus"
       >
         <!-- 搜索的ICON -->
-        <m-icon type="search" class="wxp-cascader-search-icon" />
+        <m-icon :type="searchIcon" class="wxp-cascader-search-icon" />
 
         <!-- 标签 -->
         <span v-show="soleCateVisible" class="wxp-cascader-sole-text">{{ formatInput(soleCate) }}</span>
@@ -36,25 +36,29 @@
         <!-- 清除 icon -->
         <m-icon 
           v-show="phone || (soleCateVisible && focused)"
-          type="backspace" 
           class="wxp-cascader-sole-clear" 
+          :type="clearIcon" 
           :size="14" 
           @click="clear"
         />
       </div>
-
+      
       <!-- 原因 -->
-      <p class="wxp-cascader-sole-explain" v-if="reason && !focused">{{ reason }}</p>
+      <p class="wxp-cascader-sole-explain" v-if="reason">{{ reason }}</p>
     </div>
 
     <slot />
 
     <!-- 下拉列表 -->
+    <teleport to="body">
     <div 
       :class="[
         'wxp-cascader-list',
-        maxDepth == 1 ? 'wxp-cascader-list-sole' : ''
-      ]" 
+        maxDepth == 1 ? 'wxp-cascader-list-sole' : '',
+        phone && !(queryList && queryList.length) ? 'wxp-cascader-list-empty' : ''
+      ]"
+      :style="styleObj"
+      ref="listRef"
       v-show="optionListVisible"
     >
       <m-spin :spinning="loading" async>
@@ -85,10 +89,18 @@
                 ]" 
               >
               </span>
-              <span class="wxp-cascader-list-option-text">{{ t.label }}</span>
-              <span class="wxp-cascader-list-option-arrow" v-if="t.childrenCount">
-                <!-- <m-icon type="arrow-right" /> -->
-                <span class="wxp-icon">></span>
+              
+              <a-tooltip v-if="disabledTip">
+                <template #title>{{ t.disabled ? disabledTip : '' }}</template>
+                <span class="wxp-cascader-list-option-text">{{ t.label }}</span>
+              </a-tooltip>
+              <span v-else class="wxp-cascader-list-option-text">{{ t.label }}</span>
+
+              <span class="wxp-cascader-list-option-count-arrow">
+                <span class="wxp-cascader-list-option-count" v-if="isShowCount && (t.totalCount || isShowZero )">{{ t.totalCount ? t.totalCount : 0  }}</span>
+                <span class="wxp-cascader-list-option-arrow" v-if="t.childrenCount">
+                  <m-icon type="arrow-right" />
+                </span>
               </span>
             </li>
           </ul>
@@ -136,20 +148,22 @@
         </div>
       </m-spin>
     </div>
+    </teleport>
   </div>
 </template>
 
 <script lang="ts">
 import { defineComponent, ref, computed, watch, onMounted } from 'vue'
-import { Input } from 'ant-design-vue'
+import { Input, Tooltip } from 'ant-design-vue'
 import debounce from 'lodash.debounce'
-import { isArray, omit } from '@wxp-ui/utils/is'
+import { isArray, omit, getElementViewOffset } from '@wxp-ui/utils'
 
 import MTag from '@wxp-ui/components/tag'
 import MIcon from '@wxp-ui/components/icon'
 import MSpin from '@wxp-ui/components/spin'
 
 import 'ant-design-vue/es/input/style'
+import 'ant-design-vue/es/tooltip/style'
 
 import { cascaderProps } from './cascader'
 
@@ -194,6 +208,7 @@ export default defineComponent({
   props: cascaderProps,
   components: {
     [Input.name]: Input,
+    [Tooltip.name]: Tooltip,
     [MTag.name]: MTag,
     [MIcon.name]: MIcon,
     [MSpin.name]: MSpin,
@@ -204,6 +219,10 @@ export default defineComponent({
     const inputRef = ref(null)
     // 最外层的DOM
     const wrapRef = ref(null)
+    // 下拉列表DOM
+    const listRef = ref(null)
+    // teleport 
+    const styleObj = ref({})
     
     // 搜索的话
     const phone = ref('')
@@ -227,7 +246,7 @@ export default defineComponent({
     const soleEnded = ref(false)
 
     let radioCheckedNode = null
-
+    
     // ------- ******** -------
     // 下拉框是否可见
     const optionListVisible = computed(() => focused.value)
@@ -304,6 +323,8 @@ export default defineComponent({
       }
     })
 
+    // 2022-07-06新增 回显(只给叶子)，自动寻找路径
+    let defaultPathFromLeaf
     // 所有的类目数据
     let treeData = {}
     // 所有的叶子节点
@@ -312,9 +333,13 @@ export default defineComponent({
     let oneLevelList = []
     let allLayers = []
     watch(() => props.options, (nextV) => {
+      forceUpdate(nextV)
+    })
+    function forceUpdate(nextV) {
       resetAll()
 
       loading.value = true
+      defaultPathFromLeaf = []
 
       treeData = flattenChildren(nextV, ROOT_NAME, {}, null)
       
@@ -323,7 +348,12 @@ export default defineComponent({
       // 默认显示第一级
       currentPath.value = [ROOT_NAME]
 
-      if (props.defaultOption) {
+      // 2022-07-06新增 回显(只给叶子)，自动寻找路径
+      if (props.defaultLeaf) {
+        initCurrentPath(defaultPathFromLeaf)
+      }
+      // @deprecated
+      else if (props.defaultOption) {
         initCurrentPath(props.defaultOption)
       }
 
@@ -344,10 +374,10 @@ export default defineComponent({
           return memo
         }, [])
       }
-    })
+    }
     // 把数据拍平
     function flattenChildren(level, footpath, treeData, parent) {
-      // 中间层可选模式，需要逐层匹配精确匹配，BFS
+      // 中间层可选模式，需要逐层匹配精确匹配，DFS
       // ensure leaf nodes will be included
       if (props.intermediate) {
         allLayers.push(footpath)
@@ -364,7 +394,7 @@ export default defineComponent({
       level.forEach(t => {
         // 可能有一些业务自己的处理
         if (typeof props.transformer == 'function') {
-          props.transformer(t)
+          props.transformer(t, footpath)
         }
 
         t.id = t.id || t.value
@@ -380,6 +410,11 @@ export default defineComponent({
           leafNodeList.push({ ...(omit(t, ['children'])) })
         }
 
+        // 2022-07-06新增 回显(只给叶子)，自动寻找路径
+        if (t[props.defaultLeafId] == props.defaultLeaf) {
+          defaultPathFromLeaf = reachMe(t).map((o) => o.id)
+        }
+
         // recursive
         flattenChildren(t.children, concatFootPath(footpath, t.id), treeData, t)
       })
@@ -387,6 +422,17 @@ export default defineComponent({
       return treeData
     }
 
+    // 动态调整浮层的位置
+    watch(() => optionListVisible.value, () => {
+      if (!wrapRef.value) return
+      
+      const { left, top, height } = getElementViewOffset(wrapRef.value)
+      styleObj.value = {
+        left: left + 'px',
+        top: (top + height + props.marginTop - (reason.value ? 20 : 0)) + 'px',
+      }
+    })
+    
     // ------- ******** -------
     function resetInputStatus(needPlaceholder) {
       phone.value = ''
@@ -403,16 +449,12 @@ export default defineComponent({
     }
 
     function switchLevel(record, forceEnd) {
-      console.log('we\'re at ', currentPath.value)
-      console.log('you click ', record)
-
       soleEnded.value = forceEnd || !record.childrenCount
 
       // 点击了最右侧的
       if (currentPath.value.length == record.depth) {
         currentPath.value = currentPath.value.concat(record.cwd)
       } else { // 切换到上一级
-        console.log('ooooo');
         const temp = currentPath.value.slice(0, record.depth)
         currentPath.value = temp.concat(record.cwd)
       }
@@ -422,13 +464,11 @@ export default defineComponent({
       if (soleEnded.value) { // 说明已经到叶子节点了
         mockBlur()
       }
-
-      console.log('now we are at ', currentPath.value);
     }
 
     // 正常的点击
     function rowClick(record, e) {
-      if (record.disabled) {
+      if (!props.clickableWhenDisabled && record.disabled) {
         return
       }
 
@@ -447,7 +487,7 @@ export default defineComponent({
           radioCheckedNode = null
           switchLevel(record)
         }
-      } else {
+      } else if (record.childrenCount || !record.disabled) { // 禁用且叶子节点，不可点
         switchLevel(record)
       }
 
@@ -570,7 +610,7 @@ export default defineComponent({
 
     // 用来回显数据
     function initCurrentPath(pathIdList) {
-      if (pathIdList.some(t => !t)) {
+      if (!pathIdList || !pathIdList.length || pathIdList.some(t => !t)) {
         return
       }
 
@@ -597,7 +637,7 @@ export default defineComponent({
     // ------- ******** -------
     onMounted(() => {
       document.body.addEventListener('click', (e) => {
-        if (focused.value && !wrapRef.value?.contains(e.target)) {
+        if (focused.value && (!wrapRef.value?.contains(e.target) && !listRef.value?.contains(e.target))) {
           mockBlur()
         }
       }, false)
@@ -605,7 +645,7 @@ export default defineComponent({
 
     return {
       initCurrentPath,
-
+      
       phone,
       phoneRegExp,
       queryList,
@@ -615,6 +655,8 @@ export default defineComponent({
       
       wrapRef,
       inputRef,
+      listRef,
+      styleObj,
       inputPlaceholder,
 
       soleCate,
@@ -623,6 +665,7 @@ export default defineComponent({
       currentList,
       optionListVisible,
 
+      forceUpdate,
       clear,
       rowClick,
       selectItem,

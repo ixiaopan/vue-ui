@@ -30,7 +30,7 @@
 import { ref } from 'vue'
 
 import { getGoodsList, queryCategory } from '@/api/phone'
-import { omit } from '@wxp-ui/utils/is'
+import { omit } from '@wxp-ui/utils/util'
 
 const goods = ref([])
 const goodsMore = ref([])

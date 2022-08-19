@@ -20,15 +20,43 @@
       @click="mockFocus"
       >
         <!-- 标签 -->
-        <m-tag 
+        <div class="wxp-cascader-multiple-tag-max-count" v-if="maxTagCount > -1">
+          <m-tag 
+            class="wxp-cascader-multiple-tag"
+            v-for="v in multipleTag.slice(0, maxTagCount)"
+            type="rounded"
+            :iconType="!disabled && !v.disabled && showCloseDisable ? 'close' : ''"
+            :key="v._id"
+            :color="v._color"
+            :disabled="disabled"
+            @iconClick="removeTag(v._id, $event)"
+          >
+            <template v-if="tagEllipsis">
+              <m-text ellipsis dynamic :max-height="24" autoResize :dynamicText="v._text" />
+            </template>
+            
+            <template v-else>
+              {{ v._text }}
+            </template>
+          </m-tag>
+          
+          <a-tooltip v-if="multipleTag.length > maxTagCount">
+            <template #title>{{ multipleTag.slice(maxTagCount).map(o => o._text).join(', ')}}</template>
+            <m-tag>+{{ multipleTag.length - maxTagCount }}</m-tag>
+          </a-tooltip>
+        </div>
+
+        <m-tag
           class="wxp-cascader-multiple-tag"
+          v-else
           v-for="v in multipleTag"
           type="rounded"
+          :iconType="!disabled && !v.disabled && showCloseDisable ? 'close' : ''"
           :key="v._id"
-          iconType="close"
           :color="v._color"
+          :disabled="disabled"
           @iconClick="removeTag(v._id, $event)"
-        >{{ v._text }}</m-tag>
+        >{{ formatTag ? formatTag(v) : v._text }}</m-tag>
 
         <!-- 输入框 -->
         <a-input 
@@ -47,19 +75,22 @@
       </div>
 
       <!-- 原因 -->
-      <p class="wxp-cascader-multiple-explain" v-if="!multipleTag.length && reason && !focused">{{ reason }}</p>
+      <p class="wxp-cascader-multiple-explain" v-if="!multipleTag.length && reason">{{ reason }}</p>
     </div>
 
     <slot />
 
     <!-- 下拉列表 -->
+    <teleport :to="teleportTo || 'body'">
     <div 
       :class="[
         'wxp-cascader-multiple-list',
-        intermediate ? '' : 'wxp-cascader-multiple-list-sole'
+        intermediate ? '' : 'wxp-cascader-multiple-list-sole',
+        listClass,
       ]" 
+      ref="listRef"
       v-show="optionListVisible" 
-      :style="intermediate ? {} : { width: width + 'px' }"
+      :style="intermediate ? styleObj : { width: width + 'px', ...styleObj, }"
     >
       <m-spin :spinning="loading" async>
         <div 
@@ -76,22 +107,23 @@
                 t.disabled ? 'wxp-cascader-multiple-level-item-disabled' : '',
                 t.selecting ? 'wxp-cascader-multiple-level-item-selecting' : '',
                 t.selectedEnded ? 'wxp-cascader-multiple-level-item-selecting-ended' : '',
-                t.selectedEndedCollapsed ? 'wxp-cascader-multiple-level-item-selecting-ended-collapsed' : '',
                 t.selected ? 'wxp-cascader-multiple-level-item-selected' : '',
               ]"
               :key="t.id"
               @click="rowClick(t, $event)"
             >
-              <a-tooltip>
+              <a-tooltip v-if="(!(hideFirstCheckbox && index == 0)) && (!leafSelectOnly || !t.childrenCount)">
                 <template #title>{{ t.disabled ? tipText : '' }}</template>
-                <span 
+                <span
                   :class="[
                     'wxp-cascader-multiple-level-checkbox',
                     t.selected ? 'wxp-cascader-multiple-level-checkbox-selected' : '',
                   ]" 
                 />
               </a-tooltip>
+
               <span class="wxp-cascader-multiple-level-text">{{ t.label }}</span>
+              
               <m-icon v-if="t.childrenCount" class="wxp-cascader-multiple-level-arrow" type="arrow-right" />
             </li>
           </ul>
@@ -140,6 +172,7 @@
         </div>
       </m-spin>
     </div>
+    </teleport>
   </div>
 </template>
 
@@ -147,11 +180,12 @@
 import { defineComponent, ref, computed, watch, onMounted } from 'vue'
 import { Input, Tooltip } from 'ant-design-vue'
 import debounce from 'lodash.debounce'
-import { isArray, omit } from '@wxp-ui/utils/is'
+import { isArray, omit, getElementViewOffset } from '@wxp-ui/utils'
 
 import MTag from '@wxp-ui/components/tag'
 import MIcon from '@wxp-ui/components/icon'
 import MSpin from '@wxp-ui/components/spin'
+import MText from '@wxp-ui/components/text'
 
 import 'ant-design-vue/es/input/style'
 import 'ant-design-vue/es/tooltip/style'
@@ -203,8 +237,9 @@ export default defineComponent({
     [MTag.name]: MTag,
     [MIcon.name]: MIcon,
     [MSpin.name]: MSpin,
+    [MText.name]: MText,
   },
-  emits: ['click', 'selected', 'change', 'inputChange', 'blur', 'removeFromTag'],
+  emits: ['click', 'selected', 'change', 'inputChange', 'focus', 'blur', 'removeFromTag'],
   setup(props, { emit }) {
     const guid = () => guid._id++
     guid._id = 0
@@ -213,6 +248,10 @@ export default defineComponent({
     const inputRef = ref(null)
     // 最外层的DOM
     const wrapRef = ref(null)
+    // 下拉列表DOM
+    const listRef = ref(null)
+    // teleport 
+    const styleObj = ref({})
 
     // 搜索的话
     const phone = ref('')
@@ -248,7 +287,14 @@ export default defineComponent({
     // 标签是否显示
     const multipleTagVisible = computed(() => !!multipleTag.value.length)
     // 显示标签，就不显示占位符,优先显示 disabledHint
-    const inputPlaceholder = computed(() => props.disabled ? props.disabledHint : (multipleTagVisible.value ? '' : props.placeholder))
+    const inputPlaceholder = computed(() => multipleTagVisible.value ? '' : (props.disabled ? props.disabledHint : props.placeholder))
+
+    // 自适应，每次显示的时候，都重新算一下位置
+    watch(() => optionListVisible.value, (nv) => {
+      if (nv) {
+        calContainerPosition()
+      }
+    })
 
     // ------- ******** -------
     function updateEachLevelStatus(curLevel = [], tagList, curPath) {
@@ -259,23 +305,21 @@ export default defineComponent({
         const selectedEnded = !!(nextTagList?.find((t) => t.depth > item.depth && hasParentDependency(t, item)))
         
         // 咩有标签的时候，还是选择中的过程，根据目录来
-        const selecting = selectedEnded || item.cwd == curPath
+        const selecting = item.cwd == curPath
         
-        // 没有被展开，即不在当前渲染的下拉列表层级内
-        const selectedEndedCollapsed = selectedEnded && item.cwd != curPath
-
         // 所选择的标签就在当前下拉列表里，那就直接高亮
         const selected = !!(nextTagList?.find((t) => t.cwd === item.cwd))
 
         // 选择的标签是父亲，就要禁用孩子
-        const disabled = (majestySelected.value && (item.id !== props.majestyId)) || !!(nextTagList?.find((t) => t.depth < item.depth && hasParentDependency(item, t)))
+        // 新增业务自定义禁用状态
+        const customDisabled = typeof props.disableChecker == 'function' && props.disableChecker(item, nextTagList)
+        const disabled = customDisabled || (majestySelected.value && (item.id !== props.majestyId)) || !!(nextTagList?.find((t) => t.depth < item.depth && hasParentDependency(item, t)))
 
         return {
           ...item,
           disabled,
           selecting,
           selectedEnded,
-          selectedEndedCollapsed,
           selected,
         }
       })
@@ -330,16 +374,26 @@ export default defineComponent({
     // 中间层搜索的
     let oneLevelList = []
     let allLayers = []
+    // 2022-07-06 新增
+    let defaultSelectPathList = []
+
     watch(() => props.options, (nextV) => {
       // start
       loading.value = true
+      defaultSelectPathList = []
 
       treeData = flattenChildren(nextV, ROOT_NAME, {}, null)
  
       // 默认显示第一级
       currentPath.value = [ROOT_NAME]
-
-      initDefaultTag()
+      
+      if (props.defaultList) {
+        initDefaultTag(defaultSelectPathList)
+      } 
+      // @deprecated
+      else {
+        initDefaultTag(props.defaultTagList)
+      }
 
       loading.value = false
 
@@ -395,6 +449,13 @@ export default defineComponent({
         if (!t.childrenCount) {
           leafNodeList.push({ ...(omit(t, ['children'])) })
         }
+
+        // 2022-07-06新增 回显(只给叶子)，自动寻找路径
+        props.defaultList?.forEach((dk) => {
+          if (t[props.defaultListId] == dk) {
+            defaultSelectPathList.push(reachMe(t).map((o) => o.id).join('/'))
+          }
+        })
 
         // recursive
         flattenChildren(t.children, concatFootPath(footpath, t.id), treeData, t)
@@ -503,24 +564,26 @@ export default defineComponent({
 
       let nextList = []
 
-      if (props.intermediate) {
+      if (props.intermediate && !props.leafSearchOnly) {
         // [[p1], [p1, p2], [p1, p2, leaf]]
         nextList = oneLevelList.filter((res) => {
           const lastNode = res[res.length - 1]
-          return lastNode.label.indexOf(q) > -1 && !isParentInTag(lastNode)
+          return lastNode.label.indexOf(q) > -1 && !isParentInTag(lastNode) && !lastNode.disabled
         })
       } else {
         // 匹配关键词，且不再标签内
-        nextList = leafNodeList.filter(t => t.label.indexOf(q) > -1 && !hasExistedTag(t.id)).map(t => reachMe(t))
+        nextList = leafNodeList.filter(t => !t.disabled && t.label.indexOf(q) > -1 && !hasExistedTag(t.id)).map(t => reachMe(t))
       }
 
       queryList.value = nextList
     }
 
     // 业务初始化 回显
-    function initDefaultTag() {
+    function initDefaultTag(nextTag) {
+      if (!nextTag || !nextTag.length) return
+      
       if (props.intermediate) {
-        let defaultTags = props.defaultTagList?.filter(t => t).map(nodeId => {
+        let defaultTags = nextTag?.filter(t => t).map(nodeId => {
           const childPath = splitFootPath(nodeId)
           const parentPath = childPath.length == 1 ? ROOT_NAME : concatFootPath(ROOT_NAME, childPath.slice(0, -1))
           const o = treeData ? treeData[parentPath]?.find(t => t.cwd == concatFootPath(ROOT_NAME, nodeId)) : null
@@ -543,8 +606,9 @@ export default defineComponent({
           multipleTag.value = []
         }
       }
+      
       else { // case 1 只有一级
-        let defaultTags = props.defaultTagList?.filter(t => t).map(tag => {
+        let defaultTags = nextTag?.filter(t => t).map(tag => {
           if (typeof tag == 'string' || typeof tag == 'number') { // 只需要给 ID 就好了
             const o = treeData ? treeData[ROOT_NAME]?.find(t => t.id == tag) : null
             if (o) {
@@ -588,6 +652,7 @@ export default defineComponent({
     }
     // 添加
     function addTag(o: TagProps, opt) {
+      
       if (!o) return
 
       if (opt?.reset) {
@@ -670,10 +735,16 @@ export default defineComponent({
       if (props.disabled) {
         return
       }
+      
       if (inputRef.value) {
         inputRef.value[focus ? 'focus' : 'blur']()
         focused.value = !!focus
+        
+        if (focus) {
+          emit('focus')
+        }
       }
+      
       if (ignoreInput) {
         focused.value = !!focus
       }
@@ -705,7 +776,10 @@ export default defineComponent({
       if (isOnComposition || phone.value || !multipleTag.value.length) {
         return
       }
-      removeTag(multipleTag.value[multipleTag.value.length - 1]._id)
+      const node2Remove = multipleTag.value[multipleTag.value.length - 1]
+      if (!node2Remove.disabled) {
+        removeTag(node2Remove._id)
+      }
     }
 
     function onCompositionStart() {
@@ -750,12 +824,22 @@ export default defineComponent({
 
 
     // ------- ******** -------
+    function calContainerPosition() {
+      const { left, top, height } = getElementViewOffset(wrapRef.value)
+      styleObj.value = {
+        left: left + 'px',
+        top: (top + height + props.marginTop) + 'px',
+      }
+    }
+
     onMounted(() => {
       document.body.addEventListener('click', (e) => {
-        if (focused.value && !wrapRef.value?.contains(e.target)) {
+        if (focused.value && (!wrapRef.value?.contains(e.target) && !listRef.value?.contains(e.target))) {
           mockBlur()
         }
       }, false)
+
+      calContainerPosition()
     })
 
     return {
@@ -768,13 +852,16 @@ export default defineComponent({
       
       wrapRef,
       inputRef,
+      listRef,
+      styleObj,
       inputPlaceholder,
 
       multipleTag,
       multipleTagVisible,
       currentList,
       optionListVisible,
-      
+
+      initDefaultTag,
       removeTag,
       rowClick,
       selectItem,

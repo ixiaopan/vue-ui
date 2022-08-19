@@ -8,4 +8,6 @@ export * from './message'
 export * from './cascader-multiple'
 export * from './phone-tag'
 export * from './tab'
+export * from './video-frame'
+export * from './text'
 // <SLOT>, do not remove this comment!

@@ -1,0 +1,29 @@
+@import './mixins/var.less';
+
+.wxp-text {
+  &.wxp-text-default {
+    color: @m-text-color-95;
+  }
+  &.wxp-text-warning {
+    color: @m-warning-color;
+  }
+  &.wxp-text-error {
+    color: @m-error-color;
+  }
+  &.wxp-text-success {
+    color: @m-success-color;
+  }
+  &.wxp-text-disabled {
+    color: @m-text-color-25;
+  }
+
+  &.wxp-text-ellipsis {
+    display: inline-block;
+  }
+  &.wxp-text-single-line {
+  }
+  .wxp-text-ellipsis-inner {
+    // display: inline-block;
+    // width: 100%;
+  }
+}
