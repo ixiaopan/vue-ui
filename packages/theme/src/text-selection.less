@@ -1,0 +1,122 @@
+@import './mixins/var.less';
+
+.wxp-text-selection {
+}
+
+.wxp-text-selection-toolkit {
+  position: absolute;
+  top: 0;
+  color: #fff;
+  opacity: 0;
+  transition: opacity 0.2s;
+  border-radius: 4px;
+
+  z-index: 9999;
+  transform: translate(-50%, -105%);
+  background-color: rgba(0, 0, 0, 0.839);
+
+  &-light {
+    background: #fff;
+    padding: 4px;
+    box-shadow: 0px 11px 20px rgba(0, 0, 0, 0.06), 0px 3px 6px rgba(0, 0, 0, 0.05), 0px 0px 2px rgba(0, 0, 0, 0.05);
+    .wxp-text-selection-toolkit-content {
+      background: #fff;
+      color: rgba(0, 0, 0, 0.7);
+      width: 24px;
+      height: 24px;
+      border-radius: @m-border-radius;
+      .wxp-icon {
+        color: rgba(0, 0, 0, 0.7);
+        &:hover {
+          background: @m-mask-color-5;
+          color: @m-primary-color-7;
+        }
+        &:active,
+        &-active,
+        &-active:hover {
+          background: @m-mask-color-11;
+          color: @m-primary-color-active;
+        }
+      }
+    }
+  }
+
+  &-content {
+    height: 32px;
+    width: 32px;
+    background-color: #2e2f33;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 4px;
+
+    .wxp-icon {
+      color: #fff;
+      cursor: pointer;
+    }
+    .wxp-icon:hover {
+      color: #5752ff;
+    }
+    .wxp-icon:active {
+      color: #4942ff;
+    }
+  }
+}
+
+.wxp-text-selection-annotated {
+  background-color: transparent;
+  text-decoration: 1px solid underline #ffac38;
+}
+
+.wxp-text-selection-highlight {
+  background-color: #ffedcc;
+  text-decoration: 1px solid underline #ffac38;
+}
+
+.wxp-text-selection-focus {
+  background-color: #ffedcc;
+  text-decoration: 1px solid underline #ffac38;
+}
+
+.wxp-text-selection-tag {
+  display: none;
+  position: absolute;
+  top: 0;
+  color: rgba(255, 255, 255, 0.9);
+  transition: opacity 0.2s;
+  background-color: rgba(0, 0, 0, 0.839);
+  border-radius: 2px;
+  z-index: 9999;
+  &-light {
+    background-color: rgba(255, 255, 255, 1);
+    box-shadow: 0px 11px 20px rgba(0, 0, 0, 0.06), 0px 3px 6px rgba(0, 0, 0, 0.05), 0px 0px 2px rgba(0, 0, 0, 0.05);
+    color: rgba(0, 0, 0, 0.95);
+    .wxp-text-selection-tag-info {
+      color: rgba(0, 0, 0, 0.4);
+    }
+    .wxp-text-selection-tag-item {
+      color: rgba(0, 0, 0, 0.95);
+    }
+  }
+
+  &-list {
+    padding: 8px;
+    max-height: 240px;
+    overflow-y: auto;
+  }
+
+  &-info {
+    color: rgba(255, 255, 255, 0.4);
+    padding: 5px 8px;
+  }
+
+  &-item {
+    padding: 5px 8px;
+    cursor: pointer;
+    color: #fff;
+  }
+  &-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 2px;
+  }
+}

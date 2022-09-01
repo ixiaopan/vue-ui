@@ -11,6 +11,7 @@ import PhoneTag from './__docs__/phone-tag.md'
 import Tab from './__docs__/tab.md'
 import VideoFrame from './__docs__/video-frame.md'
 import Text from './__docs__/text.md'
+import TextSelection from './__docs__/text-selection.md'
 // <SLOT>, do not remove this comment!
 
 type MenuItem = {
@@ -44,6 +45,7 @@ export default [
 { name: 'Tab', component: Tab },
 { name: 'VideoFrame', component: VideoFrame },
 { name: 'Text', component: Text },
+{ name: 'TextSelection', component: TextSelection },
 // <SLOT>, do not remove this comment!
     ],
   },

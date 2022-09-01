@@ -10,4 +10,5 @@ export * from './phone-tag'
 export * from './tab'
 export * from './video-frame'
 export * from './text'
+export * from './text-selection'
 // <SLOT>, do not remove this comment!

@@ -139,6 +139,7 @@
              v-for="(row, idx) in queryList" 
             :class="[
               'wxp-cascader-multiple-search-option-item',
+              row._active ? 'active' : ''
             ]" 
             :key="idx"
             @click="selectItem(row)"
@@ -177,7 +178,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, computed, watch, onMounted } from 'vue'
+import { defineComponent, nextTick, ref, computed, watch, onMounted } from 'vue'
 import { Input, Tooltip } from 'ant-design-vue'
 import debounce from 'lodash.debounce'
 import { isArray, omit, getElementViewOffset } from '@wxp-ui/utils'
@@ -192,6 +193,7 @@ import 'ant-design-vue/es/tooltip/style'
 
 import { cascaderMultipleProps } from './cascader-multiple'
 import { TagProps } from '../../tag/src/tag'
+
 
 interface NodeProps {
   id: string,
@@ -290,11 +292,62 @@ export default defineComponent({
     const inputPlaceholder = computed(() => multipleTagVisible.value ? '' : (props.disabled ? props.disabledHint : props.placeholder))
 
     // 自适应，每次显示的时候，都重新算一下位置
-    watch(() => optionListVisible.value, (nv) => {
-      if (nv) {
-        calContainerPosition()
+    watch(() => optionListVisible.value, (nv, ov) => {
+      if (nv && nv != ov) {
+        nextTick(() => {
+          calContainerPosition()
+        })
       }
     })
+    function calContainerPosition() {
+      // 这是组件的触发位置
+      let { left, right, top, bottom, width, height, } = getElementViewOffset(wrapRef.value)
+
+      const isRelative2Body = props.teleportTo == 'body'
+      
+      // 这是列表的父亲，需要算一下
+      let parentRect
+      let parentNode: any = props.teleportTo
+      if (!isRelative2Body) {
+        if (typeof props.teleportTo == 'string') {
+          parentNode = document.querySelector(props.teleportTo)
+        }
+        parentRect = getElementViewOffset(parentNode)
+      }
+
+      // 边界处理
+      const bodyW = document.documentElement.clientWidth
+      const bodyH = document.documentElement.clientHeight
+
+      // 挤在右边了，这个阈值满足要求了
+      const nearRight = width <= 200 && (isRelative2Body ? right + 200 >= bodyW : right + 200 >= parentRect.right)
+      // 挤在下边了
+      const nearBottom = isRelative2Body ? bottom + 200 >= bodyH : bottom + 200 >= parentRect.bottom
+      
+      let scrollTop = 0
+      try {
+        scrollTop = parentNode.scrollTop || 0
+      } catch (e) {
+        scrollTop = 0
+      }
+
+      const style = {
+        left: (isRelative2Body ? left : left - parentRect.left) + 'px',
+        top: (isRelative2Body ? top + height + props.marginTop : top + scrollTop - parentRect.top + height + props.marginTop) + 'px',
+      }
+
+      if (nearRight) {
+        delete style.left
+        style.right = (isRelative2Body ? bodyW - right : parentRect.right - right ) + 'px'
+      }
+
+      if (nearBottom) {
+        delete style.top
+        style.bottom = (isRelative2Body ? bodyH - top + props.marginBottom : -1 * (scrollTop - parentRect.bottom + bottom - height - props.marginBottom)) + 'px'
+      }
+
+      styleObj.value = style
+    }
 
     // ------- ******** -------
     function updateEachLevelStatus(curLevel = [], tagList, curPath) {
@@ -567,16 +620,60 @@ export default defineComponent({
       if (props.intermediate && !props.leafSearchOnly) {
         // [[p1], [p1, p2], [p1, p2, leaf]]
         nextList = oneLevelList.filter((res) => {
+          // 第一列是隐藏的
+          // 主要是针对脚本的内容特征
+          if (res.length == 1 && props.hideFirstCheckbox) {
+            return false
+          }
+
+          // 节点不可选择，比如业务可以选择如果有孩子，父亲就不能选，效果在某种程度等同于 hideFirstCheckbox
+          // 只是前者更灵活，有孩子只选择孩子，没孩子选择自己
+          // 后者不管有没有孩子，第一列都是隐藏不可选择的
           const lastNode = res[res.length - 1]
-          return lastNode.label.indexOf(q) > -1 && !isParentInTag(lastNode) && !lastNode.disabled
+          return !lastNode.unselectable && lastNode.label.indexOf(q) > -1 && !isParentInTag(lastNode) && !lastNode.disabled
         })
       } else {
         // 匹配关键词，且不再标签内
         nextList = leafNodeList.filter(t => !t.disabled && t.label.indexOf(q) > -1 && !hasExistedTag(t.id)).map(t => reachMe(t))
       }
 
-      queryList.value = nextList
+      queryList.value = nextList?.map((o, idx) => {
+        o._active = idx == 0
+        return o
+      })
+
+      if (props.useHotkey) {
+        listRef.value?.querySelector('.active')?.scrollIntoView({ block: 'end' })
+      }
     }
+    function movePrevQuery() {
+      if (props.useHotkey && phone.value.trim() && queryList.value?.length) {
+        const curIndex = queryList.value.findIndex(o => o._active)
+       
+        queryList.value?.forEach((o, idx) => {
+          o._active = idx == Math.max(0, curIndex - 1)
+        })
+        
+        listRef.value?.querySelector('.active')?.scrollIntoView({ block: 'end' })
+      }
+    }
+    function moveNextQuery() {
+      if (props.useHotkey && phone.value.trim() && queryList.value?.length) {
+        const maxLen = queryList.value.length
+        const curIndex = queryList.value.findIndex(o => o._active)
+
+        queryList.value?.forEach((o, idx) => {
+          o._active = idx == Math.min(maxLen - 1, curIndex + 1)
+        })
+
+        listRef.value?.querySelector('.active')?.scrollIntoView({ block: 'end' })
+      }
+    }
+    // 快捷键
+    const keyMap = props.useHotkey ? {
+      'up': movePrevQuery,
+      'down': moveNextQuery,
+    } : {}
 
     // 业务初始化 回显
     function initDefaultTag(nextTag) {
@@ -765,7 +862,15 @@ export default defineComponent({
       emit('blur')
     }
     function mockEnter() {
-      addErrorTagFromInput({ resetInput: true, blur: false, })
+      // 输入的情况，且有查询结果，enter 直接选择高亮的那个
+      if (phone.value?.trim() && queryList.value?.length) {
+        const o = queryList.value?.find(p => p._active)
+        if (o) { 
+          selectItem(o) 
+        }
+      } else {
+        addErrorTagFromInput({ resetInput: true, blur: false, })
+      }
     }
 
     function pastePhone() {
@@ -822,24 +927,13 @@ export default defineComponent({
       emit('inputChange', val)
     })
 
-
     // ------- ******** -------
-    function calContainerPosition() {
-      const { left, top, height } = getElementViewOffset(wrapRef.value)
-      styleObj.value = {
-        left: left + 'px',
-        top: (top + height + props.marginTop) + 'px',
-      }
-    }
-
     onMounted(() => {
       document.body.addEventListener('click', (e) => {
         if (focused.value && (!wrapRef.value?.contains(e.target) && !listRef.value?.contains(e.target))) {
           mockBlur()
         }
       }, false)
-
-      calContainerPosition()
     })
 
     return {
@@ -849,6 +943,8 @@ export default defineComponent({
       loading,
       focused,
       reason,
+
+      keyMap,
       
       wrapRef,
       inputRef,
