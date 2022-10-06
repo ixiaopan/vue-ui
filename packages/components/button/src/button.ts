@@ -16,12 +16,6 @@ export const buttonProps = {
     type: Boolean,
     default: false,
   },
-
-  click: {
-    type: Function,
-    default: () => {}
-  },
-
 }
 
 export type ButtonProps = ExtractPropTypes<typeof buttonProps>

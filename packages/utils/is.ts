@@ -21,6 +21,9 @@ export function isFunction(fn) {
   return typeof fn == 'function'
 }
 
+export function isUrl(path: string): boolean {
+  return /^https?:\/\//.test(path)
+}
 
 export const isArray = Array.isArray
 

@@ -1,15 +1,15 @@
 ---
-title: VideoFrame
+title: Draggable
 ---
 
-# VideoFrame
+# Draggable
 
 ## Basic
 
 ```vue demo
 
 <template>
-  <m-video-frame></m-video-frame>
+  <m-draggable></m-draggable>
 </template>
 
 ```

@@ -13,6 +13,12 @@ export function getLineHeight(element: HTMLElement): number | void {
   return parseInt(lineHeight, 10);
 }
 
+export function setCSS(element, style) {
+  if (!element) return
+  
+  for (const property in style)
+    element.style[property] = style[property]
+}
 
 export function getElementHeight(element: HTMLElement): number {
   return element.getBoundingClientRect().height;

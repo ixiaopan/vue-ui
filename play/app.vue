@@ -1,18 +1,22 @@
 <template>
   <div class="demo-list">
+    <MessageDemo />
+    <ScrollableDemo />
+    <TabDemo />
+    <SeekDemo />
+    
+    <TextDemo />
+    <TextSelectionDemo />
+    <DynamicInputDemo />
+    
     <CascaderDemo />
     <CascaderMultipleDemo />
     <PhoneTagDemo />
     <PhoneTagDemo1 />
-    <TabDemo />
-    <MessageDemo />
-    <ScrollableDemo />
-<VideoFrameDemo />
-<TextDemo />
-<TextSelectionDemo />
-<!-- <SLOT>, do not remove this comment! -->
-    
-    <!-- <TagDemo />
+    <!-- <SLOT>, do not remove this comment! -->
+      
+    <!-- <DraggableDemo />
+    <TagDemo />
     <SpinDemo />
     <IconDemo />
     <ButtonDemo /> -->
@@ -31,9 +35,11 @@ import CascaderMultipleDemo from './components/CascaderMultipleDemo.vue'
 import PhoneTagDemo from './components/PhoneTagDemo.vue'
 import PhoneTagDemo1 from './components/PhoneTagDemo1.vue'
 import TabDemo from './components/TabDemo.vue'
-import VideoFrameDemo from './components/VideoFrameDemo.vue'
 import TextDemo from './components/TextDemo.vue'
 import TextSelectionDemo from './components/TextSelectionDemo.vue'
+import SeekDemo from './components/SeekDemo.vue'
+import DraggableDemo from './components/DraggableDemo.vue'
+import DynamicInputDemo from './components/DynamicInputDemo.vue'
 // <SLOT>, do not remove this comment!
 </script>
 

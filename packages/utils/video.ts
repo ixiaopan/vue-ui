@@ -1,10 +1,8 @@
-import { isFunction } from './is'
-
 interface IOption {
-  container: HTMLElement
   url: string
-  width: number
-  height: number
+  container?: HTMLElement
+  width?: number
+  height?: number
   poster?: string
   preload?: string
 
@@ -12,7 +10,7 @@ interface IOption {
   loop?: boolean
   muted?: boolean
   // 创建的时候就加载资源
-  loadWhenCreate: boolean
+  loadWhenCreate?: boolean
   // 是否需要前端预读取时长
   needDuration?: boolean
 
@@ -41,7 +39,7 @@ const DEFAULT_OPTIONS = {
   loadWhenCreate: false,
 }
 
-export class MyVideo {
+export class Video {
   elem: HTMLVideoElement | undefined | null
 
   options: IOption
@@ -64,7 +62,7 @@ export class MyVideo {
 
     this.bindEvents()
 
-    this.options.container.appendChild(this.elem)
+    this.options.container?.appendChild(this.elem)
   }
 
   createVideo() {
@@ -89,8 +87,12 @@ export class MyVideo {
     }
 
     video.src = this.options.url
-    video.width = this.options.width
-    video.height = this.options.height
+    if (this.options.width) {
+      video.width = this.options.width
+    }
+    if (this.options.height) {
+      video.height = this.options.height
+    }
 
     if (this.options.loadWhenCreate) {
       video.load()
@@ -103,8 +105,6 @@ export class MyVideo {
     if (!this.elem) return
 
     this.elem.addEventListener('loadedmetadata', () => {
-      console.log('loadedmetadata')
-
       const duration = this.elem ? this.elem!.duration * 1000 : 0
 
       this.duration = duration
@@ -113,7 +113,7 @@ export class MyVideo {
     })
 
     this.elem.addEventListener('loadeddata', () => {
-      typeof this.options.onLoadedData == 'function' && this.options.onLoadedData(duration)
+      typeof this.options.onLoadedData == 'function' && this.options.onLoadedData()
     })
 
     this.elem.addEventListener('seeking', () => {
@@ -138,7 +138,7 @@ export class MyVideo {
     })
 
     // Fired when playback has stopped because of a temporary lack of data.
-    this.elem.addEventListener('waiting', () => {
+    this.elem.addEventListener('waiting', (e) => {
       this.clearTimer()
 
       typeof this.options.onWaiting == 'function' && this.options.onWaiting()
@@ -157,26 +157,26 @@ export class MyVideo {
     })
 
     // the resource was not fully loaded, but not as the result of an error.
-    this.elem.addEventListener('abort', () => {
-      console.log('abort')
-
+    this.elem.addEventListener('abort', (e) => {
       this.clearTimer()
 
       typeof this.options.onAbort == 'function' && this.options.onAbort()
     })
     this.elem.addEventListener('ended', () => {
-      console.log('ended')
-
       this.clearTimer()
 
       typeof this.options.onEnd == 'function' && this.options.onEnd()
     })
     // Fired when the resource could not be loaded due to an error.
-    this.elem.addEventListener('error', e => {
+    this.elem.addEventListener('error', (e) => {
       this.clearTimer()
-
       typeof this.options.onError == 'function' && this.options.onError(e)
     })
+  }
+
+  // 暴露给业务，手动加载视频
+  load() {
+    this.elem?.load()
   }
 
   play() {
@@ -185,7 +185,7 @@ export class MyVideo {
     if (!this.elem.paused) return
 
     // ready to play for the next frame
-    if (this.elem.readyState <= 2) return
+    if (this.elem.readyState <= 2) return console.log('not ready 2')
 
     this.elem.play()
   }
@@ -215,10 +215,30 @@ export class MyVideo {
 
   clearTimer() {
     this.timer && cancelAnimationFrame(this.timer)
+    this.timer = null
   }
 
+  // 清空 url，暂停播放
+  clear() {
+    this.clearTimer()
+    
+    this.pause()
+    
+    if (this.elem) {
+      this.elem.src = ''
+    }
+  }
+
+  // 完全销毁
   destroy() {
     this.clearTimer()
-    this.elem = null
+    
+    this.pause()
+
+    if (this.elem) {
+      this.elem.src = ''
+      this.options.container?.removeChild(this.elem)
+      this.elem = null
+    }
   }
 }

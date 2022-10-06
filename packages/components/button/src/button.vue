@@ -6,7 +6,6 @@
       size ? 'wxp-btn-' + size : '',
     ]"
     :disabled="disabled"
-    @click="click"
   >
    <slot></slot>
   </button>

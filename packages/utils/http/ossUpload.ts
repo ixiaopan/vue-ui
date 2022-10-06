@@ -1,29 +1,39 @@
 /**
  * @file 基于OSS的上传SDK
+ * @doc 
+ * - https://help.aliyun.com/document_detail/383950.html
+ * - https://github.com/ali-sdk/ali-oss
  */
 
  import { loadScriptFromRemote } from '../dom'
- import dayjs from 'dayjs'
  
- function dateHasExpiredNow(date: any, offset = 0, unit = 'minute') {
-   return dayjs(date).subtract(offset, unit).isBefore(dayjs())
+ // https://stackoverflow.com/questions/332872/encode-url-in-javascript
+ function encodeName(str: string) {
+   return encodeURIComponent(str)
+     .replace(/!/g, '%21')
+     .replace(/'/g, '%27')
+     .replace(/\(/g, '%28')
+     .replace(/\)/g, '%29')
+     .replace(/\*/g, '%2A')
+     .replace(/%20/g, '+')
  }
+
  
  interface IResource {
    file: File // required
    id?: string
    name?: string
-   // 简单模式需要进度条
-   needProgressForSimple?: boolean
-   progress?: number | string // SDK写入的上传进度
-   abortCheckpoint?: any // SDK写入的断点续传的断点信息，一般不需要业务指定
+   
    onBeforeLoad?(): any
    onProgress?(percent: number | string): any
    onComplete?(data: any): any
    onError?(error: string | Error): any
-   onResume?(): any
+   
+   // SDK写入的
+   _cptUploadId?: number | string // 断点
+   _uniqueName?: string // filename
  }
- 
+
  // 后端下发的临时访问凭证
  interface ICredential {
    accessKeyId: string
@@ -33,19 +43,21 @@
    expiration?: string
    dir?: string
    host?: string
-   region?: string
+   endpoint?: string
  }
  
- // SDK 配置参数
- export interface IOSSOption {
-   region?: string
+ export interface IOption {
+   endpoint?: string
    timeout?: number
+   maxRetryTimes?: number // SDK 自己会重试
+   refreshInterval?: number
+   // 以上是OSS instance的配置
+
    partSize?: number
    parallel?: number
    partLimit?: number
    partMIME?: string
-   maxProgress?: number
-   maxRetryTimes?: number
+   fakeProgress?: boolean
    // 业务指定的SDK地址，通过 script 加载
    sdkUrl?: string
    // 业务指定的临时凭证的API
@@ -53,47 +65,46 @@
  }
  
  const DEFAULT_CONFIG = {
-   region: 'oss-cn-hangzhou',
-   // 上传超时时间
-   timeout: 120 * 1000, // 2min
-   // 设置并发上传的分片数量。
+   endpoint: 'oss-accelerate.aliyuncs.com',
+   // instance level timeout for all operations, SDK 默认 1min
+   timeout: 2 * 60 * 1000, // 2min
+   // retry when request error is net error or timeout, SDK 默认 0
+   maxRetryTimes: 2,
+   // SDK 默认 5min
+   refreshInterval: 30 * 60 * 1000, // 30min
+   // 以上是OSS instance的配置
+ 
+   // 设置并发上传的分片数量;
    parallel: 4,
-   // 设置分片大小。默认值为 1 MB，最小值为 100 KB
-   partSize: 1024 * 1024,
-   // 分片断点 10 MB
-   partLimit: 10 * 1024 * 1024,
-   // 最大进度
-   maxProgress: 100,
-   // 重新上传最大的次数
-   maxRetryTimes: 3,
+   // 设置分片大小 0.5M; SDK 默认值为 1 MB，最小值为 100 KB
+   partSize: 512 * 1024,
+   // 分片断点 15 MB; SDK 建议 100M
+   partLimit: 15 * 1024 * 1024,
+   // 简单上传的虚拟进度条
+   fakeProgress: false,
    // 业务指定的SDK地址，通过 script 加载
-   sdkUrl: '/static/aliyun-oss-sdk-6.17.1.min.js',
+   sdkUrl: 'aliyun-oss-sdk-6.17.1.min.js',
  }
  
- export class MyOSS {
+ export class OSS {
    ossClient: any
  
    credentials: ICredential
  
-   options: IOSSOption
+   options: IOption
  
    // 多文件的断点
    checkpoints = {}
- 
-   // 分片上传重试次数
-   retryTimes = 0
  
    // 缓存需要进度条的简单上传列表
    progressListInSimpleMode: any[] = []
    //
    progressTimer: number | undefined
  
-   loadingPromise: Promise<any> | null = null
- 
-   static uid = 0
-   static uploadSpeedBPS = 0
- 
-   constructor(options: IOSSOption = {}) {
+   // 简单上传, 上行速度默认值
+   static uploadSpeedBPS = 10 * 1024 * 1024
+
+   constructor(options: IOption = {}) {
      this.options = {
        ...DEFAULT_CONFIG,
        ...options,
@@ -101,78 +112,60 @@
  
      this.credentials = {} as ICredential
  
-     MyOss.bindNetwork()
+     OSS.bindNetwork()
    }
  
    // ---- 初始化OSS客户端 ----
-   hasExpired() {
-     const expiration = this.credentials.expiration
-     return expiration && dateHasExpiredNow(expiration, 1, 'minute')
-   }
-   initAliOSSClient(): Promise<void> {
+   private initAliOSSClient(): Promise<void> {
      return new Promise(async (resolve, reject) => {
-       if (this.ossClient && !this.hasExpired()) {
-         return resolve()
-       }
+       this.destroy()
  
-       this.ossClient?.cancel()
-       
        const res = await this.options.getOssAccessKey!()
        if (res?.data?.code !== 200) {
          return reject()
        }
  
        this.credentials = res.data.data || {}
- 
-       // 处理时区问题
-       const { expiration = '' } = res.data.data || {}
-       if (expiration && expiration.endsWith('Z')) {
-         this.credentials.expiration = expiration.slice(0, -1)
-       }
- 
-       const { accessKeyId, accessKeySecret, securityToken, bucketName, region } = this.credentials
+
+       const { accessKeyId, accessKeySecret, securityToken, bucketName, endpoint } = res.data.data || {}
+       
        // @ts-ignore
        this.ossClient = new OSS({
          accessKeyId,
          accessKeySecret,
          stsToken: securityToken,
          bucket: bucketName,
-         region: region || this.options.region,
+         
+         endpoint: endpoint || this.options?.endpoint,
+         timeout: this.options?.timeout,
+         retryMax: this.options?.maxRetryTimes,
+         
+         refreshSTSTokenInterval: this.options?.refreshInterval,
          refreshSTSToken: async () => {
-           // 向您搭建的STS服务获取临时访问凭证。
            const res = await this.options.getOssAccessKey!()
- 
            if (res?.data?.code !== 200) {
-             return
-           }  
+              return {}
+           }
  
-           this.credentials = res.data.data
-           
-           const { accessKeyId, accessKeySecret, securityToken } = res.data.data
-           
+           this.credentials = res.data.data || {}
+ 
+           const { accessKeyId, accessKeySecret, securityToken } = res.data.data || {}
+ 
            return { accessKeyId, accessKeySecret, securityToken }
          },
-         // 刷新临时访问凭证的时间间隔，单位为毫秒。
-         refreshSTSTokenInterval: 30 * 60 * 1000,
        })
  
        resolve()
      })
    }
-   ensureOSSClient() {
-     if ((!this.ossClient && this.loadingPromise) || (this.ossClient && !this.hasExpired())) {
-       return this.loadingPromise
+   async ensureOSSClient() {
+     if (!this.options?.sdkUrl) {
+       return console.warn('SDK URL is required')
      }
  
-     this.loadingPromise = new Promise((resolve) => {
-       resolve(
-         loadScriptFromRemote(this.options.sdkUrl).then(() => {
-           return this.initAliOSSClient()
-         })
-       )
-     })
- 
-     return this.loadingPromise
+     if (!this.ossClient) {
+       await loadScriptFromRemote(this.options.sdkUrl)!.then(() => this.initAliOSSClient())
+     }
    }
  
    // ---- 上传回调 ----
@@ -190,15 +183,15 @@
    }
  
    // ---- 前端模拟进度 ----
-   add2ProgressList(resource: IResource) {
+   private add2ProgressList(resource: IResource) {
      this.progressListInSimpleMode.push({ resource, timestamp: Date.now(), fakeSize: 0 })
    }
-   removeFromProgressList(resource: IResource) {
-     if (resource.needProgressForSimple) {
-       this.progressListInSimpleMode = this.progressListInSimpleMode.filter((n: any) => n.resource!.id !== resource.id)
-     }
+   private removeFromProgressList(resource: IResource) {
+     this.progressListInSimpleMode = this.progressListInSimpleMode.filter(
+       (n: any) => n.resource!.id !== resource.id
+     )
    }
-   clearProgressTimer() {
+   private clearProgressTimer() {
      this.progressTimer && clearInterval(this.progressTimer)
      this.progressTimer = undefined
      this.progressListInSimpleMode = []
@@ -206,25 +199,25 @@
  
    // ---- 上传中心 ----
    // 批量上传
-   batchUpload(resourceList: IResource[], opts?: any) {
-     resourceList.forEach((resource) => {
-       this.autoUpload(resource, opts)
+   batchUpload(resourceList: IResource[]) {
+     resourceList.forEach(resource => {
+       this.autoUpload(resource)
      })
    }
  
    // 无脑上传单个文件，内部自动判断是简单、分片
-   autoUpload(resource: IResource, opts?: any) {
+   autoUpload(resource: IResource) {
      const { file } = resource
  
      if (file.size > (this.options.partLimit || 0)) {
-       this.partUpload(resource, opts)
+       this.partUpload(resource)
      } else {
-       this.simpleUpload(resource, opts)
+       this.simpleUpload(resource)
      }
    }
  
-   // case 1 简单上传
-   async simpleUpload(resource: IResource, opts?: any): Promise<{ url: string; file: File } | undefined> {
+   // --- case 1 简单上传
+   async simpleUpload(resource: IResource): Promise<{ url: string; file: File } | undefined> {
      console.log('simple upload')
  
      // 开始上传回调
@@ -234,17 +227,12 @@
        await this.ensureOSSClient()
      } catch (e: any) {
        this.onError(e, resource)
+       return
      }
  
-     const { file } = resource || {}
- 
-     const fileName = this.createFileName(file.name)
- 
      // 进度条模拟
-     if (resource.needProgressForSimple) {
+     if (this.options?.fakeProgress) {
        this.add2ProgressList(resource)
- 
-       const { maxProgress } = this.options || {}
  
        if (!this.progressTimer) {
          this.progressTimer = setInterval(() => {
@@ -252,33 +240,37 @@
              return this.clearProgressTimer()
            }
  
-           this.progressListInSimpleMode.forEach((item) => {
+           this.progressListInSimpleMode.forEach(item => {
              // byte per sec * seconds / total size
-             item.fakeSize += (MyOss.uploadSpeedBPS * (Date.now() - item.timestamp)) / 1000
+             item.fakeSize += (OSS.uploadSpeedBPS * (Date.now() - item.timestamp)) / 1024
  
+             // 不能给满的，因为是假的进度
              const fakeProgress = Math.min(
-               maxProgress,
-               Math.floor((item.fakeSize / item.resource.file.size) * maxProgress)
+               99,
+               Math.floor((item.fakeSize / item.resource.file.size) * 100)
              )
  
              this.onProgress(fakeProgress, item.resource)
  
              item.timestamp = Date.now()
  
-             if (fakeProgress >= maxProgress) {
-               return this.removeFromProgressList(item.resource)
+             // 进度条满了，不需要在监听了
+             if (fakeProgress >= 99) {
+               this.removeFromProgressList(item.resource)
              }
            })
          }, 120)
        }
      }
  
+     // 
+     const { file } = resource || {}
+     const fileName = this.createFileName(file.name)
+ 
      return this.ossClient
-       .put(fileName, file, {
-         timeout: opts?.timeout || this.options.timeout,
-       })
+       .put(fileName, file)
        .then((res: any) => {
-         const url = `${this.credentials.host}/${MyOss.encodeName(res.name)}`
+         const url = `${this.credentials.host}/${encodeName(res.name)}`
  
          const data = { url, file }
  
@@ -290,15 +282,18 @@
          return data
        })
        .catch((err: string | Error) => {
+         console.log('SimpleUploadError', err, resource);
+        
          this.removeFromProgressList(resource)
- 
-         // 上传失败回调
+         
          this.onError(err, resource)
        })
    }
  
-   // case 2 分片上传
-   async partUpload(resource: IResource, opts?: any) {
+   // --- case 2 分片上传
+   async partUpload(resource: IResource) {
+     console.log('part upload')
+
      // 开始上传回调
      this.onBeforeLoad(resource)
  
@@ -306,135 +301,101 @@
        await this.ensureOSSClient()
      } catch (e: any) {
        this.onError(e, resource)
+       return
      }
  
-     console.log('part upload')
- 
-     const { file } = resource
- 
-     const fileName = this.createFileName(file.name)
+     this.startPartUpload(resource)
+   }
+   private startPartUpload(resource: IResource) {
+     const { file, _uniqueName } = resource
+     
+     // for 断点续传
+     const fileName = _uniqueName || this.createFileName(file.name)
+     resource._uniqueName = fileName
+
      return this.ossClient
        .multipartUpload(fileName, file, {
          parallel: this.options.parallel,
-         // 针对大文件1G的，增大分片大小
          partSize: this.options.partSize,
-         progress: (p: number, cpt: any) => this.onMultipartUploadProgress(resource, p, cpt),
+         progress: (p: number, cpt: any) => {
+           this.onProgress(Math.floor(p * 100), resource)
+           
+           this.checkpoints[cpt.uploadId] = cpt
+           
+           resource._cptUploadId = cpt.uploadId
+         },
          // 设置MIME
          ...(this.options.partMIME ? { mime: this.options.partMIME } : null),
          // 设置断点
-         ...(opts?.checkpoint ? { checkpoint: opts.checkpoint } : null),
+         ...(resource._cptUploadId && this.checkpoints[resource._cptUploadId] ? { checkpoint: this.checkpoints[resource._cptUploadId] } : null),
        })
        .then((res: any) => {
-         const url = `${this.credentials.host}/${MyOss.encodeName(res.name)}`
+         const url = `${this.credentials.host}/${encodeName(res.name)}`
  
          const data = { url, file }
  
          // 上传成功回调
          this.onComplete(data, resource)
-         this.retryTimes = 0
  
          return data
        })
-       .catch((err: any) => {
-         // 重试三次，超过三次就算失败
-         this.retryTimes++
-         if (this.retryTimes <= opts?.maxRetryTimes || this.options.maxRetryTimes) {
-           this.resumeLoad(resource)
-         } else {
-           this.retryTimes = 0
-           this.onError(err, resource)
-         }
+       .catch(async (err: any) => {
+          console.log('PartUploadError', err, resource);
+
+          this.abortPartUpload(resource)
+
+          this.onError(err, resource)
        })
    }
-   onMultipartUploadProgress(resource: IResource, percent: number, checkpoint: any) {
-     // 上传进度
-     const progress = Math.floor(percent * 100)
- 
-     this.onProgress(progress, resource)
-     resource.progress = progress
- 
-     // 保存断点，续传从断点开始，从上次的进度开始上传而不是重新上传
-     resource.abortCheckpoint = checkpoint
- 
-     // 以后再做这里
-     // this.checkpoints[checkpoint.uploadId] = checkpoint
+   // case 3 暂停续传
+   abortPartUpload(resource: IResource) {
+    if (!resource?._uniqueName) return
+    
+    const uploadId = (resource?._cptUploadId && this.checkpoints[resource._cptUploadId])?.uploadId
+    if (!uploadId) {
+      return
+    }
+
+    try {
+      this.ossClient.abortMultipartUpload(resource?._uniqueName, uploadId)
+    } catch (e) {}
    }
  
-   // case 3 断点续传，
-   // 恢复上传
-   resumeLoad(resource: IResource) {
-     this.resumeMultipartUpload(resource)
-   }
-   resumeMultipartUpload(resource: IResource | IResource[]) {
-     if (Array.isArray(resource)) {
-       // TODO:
-       return
-     }
- 
-     if (!('progress' in resource)) {
-       return console.error('resume resource must have progress property')
-     }
- 
-     if (!('abortCheckpoint' in resource)) {
-       return console.error('resume resource must have abortCheckpoint property')
-     }
- 
-     if (resource.progress! < this.options.maxProgress) {
-       this.partUpload(resource, { checkpoint: resource.abortCheckpoint })
-     }
-   }
- 
-   createFileName(name: string) {
-     return this.credentials.dir + name + MyOss.randomFileName()
+   private createFileName(name: string) {
+    return (this.credentials?.dir || '') + Date.now() + '_' + name
    }
  
    destroy() {
+    console.log('destroy oss client', this.ossClient);
+    
      this.ossClient?.cancel()
      this.ossClient = null
      
-     this.loadingPromise = null
+     // @ts-ignore
+     this.credentials = {}
+     this.checkpoints = {}
+     
      this.clearProgressTimer()
    }
  
-   // ---- 工具函数 ----
-   // 随机生成文件名称
-   static randomFileName(prefix = ''): string {
-     const time = Date.now()
-     const random = Math.floor(Math.random() * 1000)
- 
-     MyOss.uid++
-     
-     prefix = !prefix || /^_/.test(prefix) ? prefix : '_' + prefix
- 
-     return prefix + '_' + random + MyOss.uid + '_' + time
-   }
- 
-   // https://stackoverflow.com/questions/332872/encode-url-in-javascript
-   static encodeName(str: string) {
-     return encodeURIComponent(str)
-       .replace(/!/g, '%21')
-       .replace(/'/g, '%27')
-       .replace(/\(/g, '%28')
-       .replace(/\)/g, '%29')
-       .replace(/\*/g, '%2A')
-       .replace(/%20/g, '+')
-   }
- 
    // 工厂函数
-   static create(opts: IOSSOption = {}) {
-     return new MyOss(opts)
+   static create(opts: IOption = {}) {
+     return new OSS(opts)
    }
  
    // https://googlechrome.github.io/samples/network-information/
    static bindNetwork() {
+     if (!navigator.connection?.downlink) {
+       return
+     }
+     
      navigator.connection.addEventListener('change', changeHandler)
  
      function changeHandler() {
-       MyOss.uploadSpeedBPS = (navigator.connection.downlink * 1024 * 1024) / 8
+       OSS.uploadSpeedBPS = (navigator.connection.downlink * 1024 * 1024) / 8
      }
  
      changeHandler()
    }
  }
- 
  

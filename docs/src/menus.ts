@@ -9,9 +9,11 @@ import Message from './__docs__/message.md'
 import CascaderMultiple from './__docs__/cascader-multiple.md'
 import PhoneTag from './__docs__/phone-tag.md'
 import Tab from './__docs__/tab.md'
-import VideoFrame from './__docs__/video-frame.md'
 import Text from './__docs__/text.md'
 import TextSelection from './__docs__/text-selection.md'
+import Seek from './__docs__/seek.md'
+import Draggable from './__docs__/draggable.md'
+import DynamicInput from './__docs__/dynamic-input.md'
 // <SLOT>, do not remove this comment!
 
 type MenuItem = {
@@ -46,6 +48,9 @@ export default [
 { name: 'VideoFrame', component: VideoFrame },
 { name: 'Text', component: Text },
 { name: 'TextSelection', component: TextSelection },
+{ name: 'Seek', component: Seek },
+{ name: 'Draggable', component: Draggable },
+{ name: 'DynamicInput', component: DynamicInput },
 // <SLOT>, do not remove this comment!
     ],
   },

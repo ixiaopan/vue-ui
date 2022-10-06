@@ -54,7 +54,7 @@ import { scrollableProps } from './scrollable'
 
 import MSpin from '@wxp-ui/components/spin'
 
-import { smoothScroll } from '@wxp-ui/utils/smooth-scroll'
+import { smoothScroll } from '@wxp-ui/utils'
 
 export default defineComponent({
   name: 'MScrollable',

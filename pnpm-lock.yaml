@@ -149,6 +149,7 @@ importers:
       ant-design-vue: ^2.2.8
       axios: ^0.25.0
       clipboard: ^2.0.10
+      eventemitter3: ^3.1.0
       less: ^4.1.2
       lodash.debounce: ^4.0.8
       mockjs: ^1.1.0
@@ -159,6 +160,7 @@ importers:
       ant-design-vue: 2.2.8_0948bf9ae83381b4c739c3f71a9cfb99
       axios: 0.25.0
       clipboard: 2.0.11
+      eventemitter3: 3.1.2
       lodash.debounce: 4.0.8
       mockjs: 1.1.0
       qs: 6.10.3
@@ -2584,6 +2586,10 @@ packages:
 
   /estree-walker/2.0.2:
     resolution: {integrity: sha512-Rfkk/Mp/DL7JVje3u18FxFujQlTNR2q6QfMSMB7AvCBx91NGj/ba3kCfza0f6dVDbw7YlRf/nDrn7pQrCCyQ/w==}
+
+  /eventemitter3/3.1.2:
+    resolution: {integrity: sha512-tvtQIeLVHjDkJYnzf2dgVMxfuSGJeM/7UCG17TT4EumTfNtF+0nebF/4zWOIkCreAbtNqhGEboB6BWrwqNaw4Q==}
+    dev: false
 
   /execa/5.1.1:
     resolution: {integrity: sha512-8uSpZZocAZRBAPIEINJj3Lo9HyGitllczc27Eh5YYojjMFMn8yHMDMaUHE2Jqfq05D/wucwI4JGURyXt1vchyg==}

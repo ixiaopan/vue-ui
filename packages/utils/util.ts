@@ -10,7 +10,6 @@ export function omit(obj, fields) {
 
 export function noop() {}
 
-// JSON序列化
 export function parseJSON(o: string) {
   try {
     return JSON.parse(o)
