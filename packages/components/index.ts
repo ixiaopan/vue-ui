@@ -13,4 +13,5 @@ export * from './text-selection'
 export * from './seek'
 export * from './draggable'
 export * from './dynamic-input'
+export * from './progress'
 // <SLOT>, do not remove this comment!

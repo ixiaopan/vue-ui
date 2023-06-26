@@ -13,7 +13,8 @@
     <CascaderMultipleDemo />
     <PhoneTagDemo />
     <PhoneTagDemo1 />
-    <!-- <SLOT>, do not remove this comment! -->
+    <ProgressDemo />
+<!-- <SLOT>, do not remove this comment! -->
       
     <!-- <DraggableDemo />
     <TagDemo />
@@ -40,6 +41,7 @@ import TextSelectionDemo from './components/TextSelectionDemo.vue'
 import SeekDemo from './components/SeekDemo.vue'
 import DraggableDemo from './components/DraggableDemo.vue'
 import DynamicInputDemo from './components/DynamicInputDemo.vue'
+import ProgressDemo from './components/ProgressDemo.vue'
 // <SLOT>, do not remove this comment!
 </script>
 

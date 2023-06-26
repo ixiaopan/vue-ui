@@ -1,6 +1,12 @@
 <template>
-  <div class="wxp-icon">
-  </div>
+  <span 
+    role="img" 
+    class="wxp-icon" 
+  >
+    <svg :class="'svg-' + type" width="1em" height="1em" fill="currentColor">
+      <use :xlink:href="`#${type}`"></use>
+    </svg>
+  </span>
 </template>
 
 <script lang="ts">

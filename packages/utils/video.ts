@@ -9,10 +9,6 @@ interface IOption {
   autoplay?: boolean
   loop?: boolean
   muted?: boolean
-  // 创建的时候就加载资源
-  loadWhenCreate?: boolean
-  // 是否需要前端预读取时长
-  needDuration?: boolean
 
   onLoadedMetadata?: (duration: number) => void
   onLoadedData?: () => void
@@ -35,8 +31,6 @@ const DEFAULT_OPTIONS = {
   muted: false,
   controls: false,
   poster: '',
-  needDuration: false,
-  loadWhenCreate: false,
 }
 
 export class Video {
@@ -92,10 +86,6 @@ export class Video {
     }
     if (this.options.height) {
       video.height = this.options.height
-    }
-
-    if (this.options.loadWhenCreate) {
-      video.load()
     }
 
     return video

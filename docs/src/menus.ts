@@ -14,6 +14,7 @@ import TextSelection from './__docs__/text-selection.md'
 import Seek from './__docs__/seek.md'
 import Draggable from './__docs__/draggable.md'
 import DynamicInput from './__docs__/dynamic-input.md'
+import Progress from './__docs__/progress.md'
 // <SLOT>, do not remove this comment!
 
 type MenuItem = {
@@ -51,6 +52,7 @@ export default [
 { name: 'Seek', component: Seek },
 { name: 'Draggable', component: Draggable },
 { name: 'DynamicInput', component: DynamicInput },
+{ name: 'Progress', component: Progress },
 // <SLOT>, do not remove this comment!
     ],
   },

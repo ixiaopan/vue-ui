@@ -30,20 +30,12 @@
       :overlayStyle="overlayStyle"
       :placement="placement"
       :trigger="trigger"
-      :title="tooltipAlways || (showTooltip && needTruncate && !truncating) ? innerTooltip : ''"
+      :title="tooltipAlways || (showTooltip && needTruncate) ? innerTooltip : ''"
       destroyTooltipOnHide
     >
       <span class="wxp-text-ellipsis-inner" @click="myClick">
-        <!-- 省略号的地方 -->
-        <span class="wxp-text-content" ref="textRef">
-          <template v-if="!dynamic">{{ staticText }}</template>
-        </span>
-
-        <span
-          class="wxp-text-ellipsis"
-          ref="ellipsisRef"
-        >{{ ellipsisText }}</span>
-
+        <span class="wxp-text-content" ref="textRef">{{ innerTooltip }}</span>
+        <span class="wxp-text-ellipsis" ref="ellipsisRef">{{ ellipsisText }}</span>
         <slot />
       </span>
     </a-tooltip>
@@ -62,9 +54,8 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, onBeforeUnmount, onMounted, watch, nextTick } from 'vue'
+import { defineComponent, computed, ref, onBeforeUnmount, onMounted, nextTick } from 'vue'
 import { Tooltip } from 'ant-design-vue'
-import debounce from 'lodash.debounce'
 
 import { resizeObserverEnabled } from '@wxp-ui/utils/is'
 import { getLineHeight, getElementHeight, } from '@wxp-ui/utils/dom'
@@ -81,30 +72,16 @@ export default defineComponent({
   },
   emits: ['truncated', 'click'],
   setup(props, { emit }) {
-    let observer = null
-
     const wrapRef = ref(null)
     const textRef = ref(null)
     const ellipsisRef = ref(null)
 
-    const innerTooltip = ref(props.tooltip || props.staticText || props.dynamicText)
-    
+    const innerTooltip = computed(() => props.staticText || props.dynamicText)
+
     const needTruncate = ref(false)
-    const truncating = ref(false)
 
-    
-    function setTextValue(val) {
-      innerTooltip.value = props.tooltip || val
-
-      if (textRef.value) {
-        textRef.value.textContent = val
-      }
-    }
-
-    watch(() => props.dynamicText, async (nextVal) => {
-      setTextValue(nextVal)
-      reflow({ force: true, })
-    })
+    let observer: any = null
+    let truncated = false
 
     // 进行截断
     function truncateText(container: HTMLElement, textContainer: HTMLElement, max: number) {
@@ -115,112 +92,105 @@ export default defineComponent({
         const added = text.slice(l, m + 1)
 
         textContainer.innerText = currentText + added
-        
+
         const height = getElementHeight(container)
 
-        if (height > max) { // 太长了
+        if (height > max) {
+          // 太长了
           return true
-        } else { // 太短了
+        } else {
+          // 太短了
           currentText += added
         }
       })
 
       textContainer.innerText = currentText
-
-      emit('truncated')
     }
 
-    // 重新计算
-    function reflow(opts = {}) {
-      if (!opts.force && truncating.value) {
-        return
-      }
-
-      if (opts.reset) {
-        if (props.dynamic) {
-          setTextValue(props.dynamicText)
-        }
-      }
+    function reflow() {
+      if (!ellipsisRef.value || !wrapRef.value || !textRef.value) return
 
       // 如果一开始就不需要截断，这个就不该出现
       ellipsisRef.value.style.display = 'none'
 
       // 二选一
-      const visualH = props.maxHeight ? (props.maxHeight || 0) : (getLineHeight(wrapRef.value) || 0) * props.rows
+      const visualH = props.maxHeight
+        ? props.maxHeight || 0
+        : (getLineHeight(wrapRef.value) || 0) * props.rows
+
       if (!visualH) {
-        return console.error('wxp-text: visual area 高度为 0')
+        return console.error('mogic-text: visual area 高度为 0')
       }
-      const wrapH = getElementHeight(wrapRef.value)
 
-      // console.log('wxp-text', textRef.value.textContent, '可见高度', visualH, '容器高度', wrapH);
+      nextTick(() => {
+        const wrapH = getElementHeight(wrapRef.value)
 
-      // case 1: 容器够大无需截断
-      // TODO < or <=
-      if (wrapH <= visualH) {
-        needTruncate.value = false
-        emit('truncated')
-      } else { // case 2: 需要截断
-        needTruncate.value = true
-        truncating.value = true
-        
-        ellipsisRef.value.style.display = 'inline'        
-        truncateText(wrapRef.value, textRef.value, visualH)
-        
-        truncating.value = false
-      }
+        // case 1: 容器够大无需截断
+        if (wrapH <= visualH) {
+          needTruncate.value = false
+          truncated = true
+        }
+        // case 2: 需要截断
+        else {
+          needTruncate.value = true
+
+          ellipsisRef.value.style.display = 'inline'
+          textRef.value.style.wordBreak = 'break-all'
+
+          truncateText(wrapRef.value, textRef.value, visualH)
+          truncated = true
+        }
+
+        observeMe()
+      })
     }
 
-    const debounceReflow = debounce(() => {
-      reflow({ force: true, reset: true })
-    }, 100)
+    function observeMe() {
+      if (!observer && props.autoResize && resizeObserverEnabled) {
+        observer = new ResizeObserver(() => {
+          // 上面的代码恢复监听，会被拦截掉，防止死循环reflow
+          if (truncated) {
+            truncated = false
+            return
+          }
 
+          // 取消监听，防止下面的代码更新textRef.textContent继续触发observer
+          cancelObserveMe()
+          reflow()
+        })
+      }
+
+      observer?.observe(wrapRef.value)
+
+      return observer
+    }
+    function cancelObserveMe() {
+      if (props.ellipsis && props.autoResize && resizeObserverEnabled && observer) {
+        observer.disconnect()
+      }
+    }
     onMounted(() => {
-      if (props.dynamic) {
-        setTextValue(props.dynamicText)
-      }
-
       if (props.ellipsis) {
-        reflow()
-      }
-
-      // 只对文本截断 且开启 自适应
-      if (props.ellipsis && props.autoResize) {
-        if (resizeObserverEnabled) {
-          observer = new ResizeObserver((e) => {
-            if (truncating.value) return
-            debounceReflow()
-          })
-          observer.observe(wrapRef.value)
-        }
-        else {
-          // 开启节流
-          window.addEventListener('resize', debounceReflow)
-        }
+        nextTick(() => reflow())
       }
     })
-
     onBeforeUnmount(() => {
-      if (props.ellipsis && props.autoResize) {
-        if (resizeObserverEnabled && observer && observer.disconnect) {
-          observer.disconnect()
-        }
-        else {
-          window.removeEventListener('resize', debounceReflow)
-        }
-      } 
+      cancelObserveMe()
     })
 
     function binarySearch(
-      l: number, 
+      l: number,
       r: number,
       callback: (l: number, r: number, m: number) => boolean
     ): void {
       while (l <= r) {
         const m = Math.floor((l + r) / 2)
 
-        if (callback(l, r, m)) { // 太长了
+        if (callback(l, r, m)) {
+          // 太长了
           r = m - 1
-        } else { // 太短了
+        } else {
+          // 太短了
           l = m + 1
         }
       }
@@ -234,7 +204,6 @@ export default defineComponent({
       myClick,
       innerTooltip,
       needTruncate,
-      truncating,
       wrapRef,
       textRef,
       ellipsisRef,
